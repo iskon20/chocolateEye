@@ -1,0 +1,157 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.card{
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  text-align: center;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 40%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+
+  gap: 50px;
+
+  padding: 10px;
+  margin: 0 auto;
+
+  background: #181818;
+
+  font-family: system-ui, sans-serif;
+  color: #eee;
+}
+
+.loader {
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+  color: red;
+}
+
+.responsive-table {
+  font-size: 1.3em;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.responsive-table th,
+.responsive-table td {
+  border: 1px solid #555;
+  padding: 8px;
+  text-align: left;
+}
+
+.responsive-table th {
+  background-color: #222;
+  font-weight: 600;
+}
+
+.mark-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 1vw 2vw;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.mark-btn:disabled {
+  background: #333;
+  cursor: not-allowed;
+}
+#pageinfo {
+  margin: 0 10px;
+}
+
+button:hover {
+  background: #555;
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+  align-items: center;
+
+  div {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+}
+
+select,
+button,
+input,
+label {
+  padding: 1vw 2vw;
+  border-radius: 6px;
+  border: none;
+  background: #222;
+  color: #eee;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  margin-bottom: 10px;
+}
+
+@media screen and (max-width: 1024px) {
+  .responsive-table thead {
+    display: none;
+  }
+
+  .logo {
+    width: 40%;
+  }
+
+  button,
+  input,
+  select,
+  label {
+    padding: 12px 20px !important;
+  }
+
+  .responsive-table tr {
+    display: block;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px;
+  }
+
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    border: none;
+    border-bottom: 1px solid #222;
+    padding: 6px 10px;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #555;
+  }
+
+  .responsive-table td:last-child {
+    border-bottom: none;
+  }
+}

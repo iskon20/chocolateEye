@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="../imgs/logo.png" type="image/x-icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Мои отметки | Chocolate Eye</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      button.action {
+        margin: 0 3px;
+        padding: 4px 8px;
+
+        padding: 1vw 2vw;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        font-size: 13px;
+      }
+
+      button.return {
+        background: #ffd966;
+      }
+      button.delete {
+        background: #ff4d4d;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <img class="logo" width="20%" src="../imgs/logo.png" alt="">
+      <h2>Мои отмеченные ID</h2>
+      <button onclick="back()">Назад</button>
+    </div>
+
+    <table id="list" class="responsive-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Имя</th>
+          <th>Чат</th>
+          <th>Статус</th>
+          <th>Телефон</th>
+          <th>Добавлен</th>
+          <th>Действие</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+
+    <script>
+      const API = "https://chocolateeyeserver-production.up.railway.app/api";
+      
+      const token = localStorage.getItem("session");
+      if (!token) location.href = "index.html";
+
+      const loader = document.createElement("div");
+      loader.id = "loader";
+      loader.classList.add("loader");
+      loader.style.width = "120px";
+      loader.style.margin = "30px auto";
+
+      async function load() {
+        const tbody = document.querySelector("#list tbody");
+        tbody.innerHTML = "";
+        tbody.parentElement.after(loader);
+
+        const anim = lottie.loadAnimation({
+          container: loader,
+          renderer: "svg",
+          loop: true,
+          autoplay: true,
+          path: "../imgs/loader.json",
+        });
+
+        try {
+          const res = await fetch(`${API}/my-marks`, {
+            headers: { "x-session": token },
+          });
+          const data = await res.json();
+
+          anim.destroy();
+          loader.remove();
+
+          data.forEach((r) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+            <td data-label="ID">${r.id
+              .toString()
+              .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
+          <td data-label="Имя">${r.name || "-"}</td>
+          <td data-label="Чат">${r.chat || "-"}</td>
+          <td data-label="Статус">${r.status || "-"}</td>
+          <td data-label="Телефон">${r.phone || "-"}</td>
+          <td data-label="Добавлен">${
+            r.marked_at?.replace("T", " ").slice(0, 19) || "-"
+          }</td>
+          <td data-label="Действия">
+            <div>
+              <button class="action return" onclick="unmark(${
+                r.id
+              })">Вернуть</button>
+                <button class="action delete" onclick="del(${
+                  r.id
+                })">Удалить</button>
+                  </div>
+          </td>`;
+            tbody.appendChild(tr);
+          });
+        } catch (e) {
+          anim.destroy();
+          loader.textContent = "Ошибка загрузки";
+        }
+      }
+
+      async function unmark(id) {
+        if (!confirm("Вернуть этот ID в общий список?")) return;
+        const res = await fetch(`${API}/unmark/${id}`, {
+          method: "POST",
+          headers: { "x-session": token },
+        });
+        const data = await res.json();
+        if (data.ok) load();
+        else alert(data.error || "Ошибка");
+      }
+
+      async function del(id) {
+        if (!confirm("Удалить запись окончательно?")) return;
+        const res = await fetch(`${API}/delete/${id}`, {
+          method: "DELETE",
+          headers: { "x-session": token },
+        });
+        const data = await res.json();
+        if (data.ok) load();
+        else alert(data.error || "Ошибка");
+      }
+
+      function back() {
+        location.href = "main.html";
+      }
+
+      load();
+    </script>
+  </body>
+</html>
