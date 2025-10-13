@@ -58,7 +58,7 @@ async function loadTargets() {
     anim.destroy();
     loader.remove();
 
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 403) {
       window.location.href = "../index.html";
       return
     }
