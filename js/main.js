@@ -10,10 +10,18 @@ function daysAgoLabel(ts) {
   const date = new Date(ts);
   const now = new Date();
   const diff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
   if (diff <= 0) return "сегодня";
   if (diff === 1) return "вчера";
   if (diff === 2) return "позавчера";
-  if (diff < 7) return `${diff} дн. назад`;
+  if (diff <= 7) {
+    const dayWord = (n => {
+      if (n % 10 === 1 && n % 100 !== 11) return "день";
+      if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return "дня";
+      return "дней";
+    })(diff);
+    return `${diff} ${dayWord} назад`;
+  }
   return date.toLocaleDateString("ru-RU");
 }
 
@@ -62,6 +70,13 @@ async function loadTargets() {
       window.location.href = "../index.html";
       return
     }
+
+    const resCount = await fetch(`${API}/count`, { headers: { "x-session": token }});
+    const count = await resCount.json();
+
+    const formatted = count.total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+    document.getElementById("total-count").innerText = `На данный момент, в базе: ${formatted} записей.`;
 
     data.data.forEach((t) => {
       const tr = document.createElement("tr");
