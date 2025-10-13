@@ -4,7 +4,7 @@
   box-sizing: border-box;
 }
 
-.card{
+.card {
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -111,6 +111,12 @@ label {
   gap: 10px;
 
   margin-bottom: 10px;
+}
+
+td {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 @media screen and (max-width: 1024px) {

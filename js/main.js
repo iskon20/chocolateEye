@@ -1,4 +1,5 @@
 const API = "https://chocolateeyeserver-production.up.railway.app/api";
+// const API = "http://127.0.0.1:3000/api";
 
 let page = 1,
   pages = 1,
@@ -56,6 +57,11 @@ async function loadTargets() {
 
     anim.destroy();
     loader.remove();
+
+    if (res.status === 401) {
+      window.location.href = "../index.html";
+      return
+    }
 
     data.data.forEach((t) => {
       const tr = document.createElement("tr");
