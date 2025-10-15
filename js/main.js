@@ -5,6 +5,26 @@ let page = 1,
   pages = 1,
   limit = 100;
 
+document.addEventListener("click", async (e) => {
+  const el = e.target.closest(".copyable");
+  if (!el) return;
+
+  let text = el.innerText.trim();
+
+  if (el.getAttribute("data-label") === "ID") {
+    text = text.replace(/\s|&nbsp;/g, "").replace(/\u00A0/g, "");
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    el.classList.add("copied");
+
+    setTimeout(() => el.classList.remove("copied"), 1000);
+  } catch (err) {
+    console.warn("Ошибка копирования:", err);
+  }
+});
+
 function daysAgoLabel(ts) {
   if (!ts) return "";
   const date = new Date(ts);
@@ -15,9 +35,10 @@ function daysAgoLabel(ts) {
   if (diff === 1) return "вчера";
   if (diff === 2) return "позавчера";
   if (diff <= 7) {
-    const dayWord = (n => {
+    const dayWord = ((n) => {
       if (n % 10 === 1 && n % 100 !== 11) return "день";
-      if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return "дня";
+      if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100))
+        return "дня";
       return "дней";
     })(diff);
     return `${diff} ${dayWord} назад`;
@@ -33,13 +54,18 @@ loader.style.margin = "30px auto";
 
 async function loadTargets() {
   const sort = document.getElementById("sort").value;
+  const idLength = document.getElementById("id_length").value;
   const hasPhone = document.getElementById("has_phone").checked;
   const notRecently = document.getElementById("not_recently").checked;
   const token = localStorage.getItem("session");
 
   const tbody = document.querySelector("#list tbody");
   tbody.innerHTML = "";
+  
   tbody.parentElement.after(loader);
+  
+
+  document.getElementById("total-count").innerText = "Загрузка...";
 
   const anim = lottie.loadAnimation({
     container: loader,
@@ -57,6 +83,8 @@ async function loadTargets() {
     not_recently: notRecently,
   });
 
+  if (idLength) params.set("id_length", idLength);
+
   try {
     const res = await fetch(`${API}/targets?${params}`, {
       headers: { "x-session": token },
@@ -68,27 +96,44 @@ async function loadTargets() {
 
     if (res.status === 401 || res.status === 403) {
       window.location.href = "../index.html";
-      return
+      return;
     }
 
-    const resCount = await fetch(`${API}/count`, { headers: { "x-session": token }});
+    const resCount = await fetch(`${API}/count`, {
+      headers: { "x-session": token },
+    });
     const count = await resCount.json();
 
-    const formatted = count.total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    const formatted = count.total
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-    document.getElementById("total-count").innerText = `На данный момент, в базе: ${formatted} записей.`;
+    document.getElementById(
+      "total-count"
+    ).innerText = `На данный момент, в базе: ${formatted} записей.`;
+
+    if (!data.data || data.data.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+    <td colspan="7" style="text-align:center; justify-content:center; padding:20px; color:#888;">
+      Ничего не найдено
+    </td>
+  `;
+      tbody.appendChild(tr);
+      return;
+    }
 
     data.data.forEach((t) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-    <td data-label="ID">${t.id
+    <td class="copyable" data-label="ID">${t.id
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
 
-    <td data-label="Имя">${t.name || ""}</td>
-    <td data-label="Чат">${t.chat || ""}</td>
+    <td class="copyable" data-label="Имя">${t.name || ""}</td>
+    <td class="copyable" data-label="Чат">${t.chat || ""}</td>
     <td data-label="Статус">${t.status || ""}</td>
-    <td data-label="Телефон">${t.phone || ""}</td>
+    <td class="copyable" data-label="Телефон">${t.phone || ""}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td data-label="Действие">
       <button class="mark-btn" onclick="mark(${t.id}, this)">Забрать</button>
@@ -123,6 +168,7 @@ document.getElementById("refresh").onclick = () => {
   loadTargets();
 };
 document.getElementById("sort").onchange = loadTargets;
+document.getElementById("id_length").onchange = loadTargets;
 document.getElementById("has_phone").onchange = loadTargets;
 document.getElementById("not_recently").onchange = loadTargets;
 document.getElementById("prev").onclick = () => {

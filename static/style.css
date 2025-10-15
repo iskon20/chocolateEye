@@ -4,6 +4,11 @@
   box-sizing: border-box;
 }
 
+.count-display{
+  margin-top: 10px;
+  text-align: center;
+}
+
 .card {
   display: flex;
   flex-direction: column;
@@ -21,7 +26,7 @@ body {
   display: flex;
   flex-direction: column;
 
-  gap: 50px;
+  gap: 25px;
 
   padding: 10px;
   margin: 0 auto;
@@ -30,6 +35,32 @@ body {
 
   font-family: system-ui, sans-serif;
   color: #eee;
+}
+
+.copyable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.copyable::after {
+  content: "Скопировано!";
+  position: absolute;
+  left: 50%;
+  top: -25px;
+  transform: translateX(-50%);
+  background: #222;
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.copyable.copied::after {
+  opacity: 1;
 }
 
 .loader {
