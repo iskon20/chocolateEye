@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="../imgs/logo.png" type="image/x-icon" />
+    <title>Отмеченные цели | Chocolate Eye</title>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="toolbar">
+      <button onclick="history.back()">← Назад</button>
+      <h2>Отмеченные цели пользователя</h2>
+    </div>
+
+    <table id="marks" class="responsive-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Имя</th>
+          <th>Чат</th>
+          <th>Статус</th>
+          <th>Телефон</th>
+          <th>Страна</th>
+          <th>Дата отметки</th>
+          <th>Действие</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      // const API = "http://127.0.0.1:3000/api";
+      const API = "https://chocolateeyeserver-production.up.railway.app/api";
+      
+      const token = localStorage.getItem("session");
+      const userId = new URLSearchParams(location.search).get("user");
+
+      function countryFlag(code) {
+        if (!code) return "";
+        code = code.trim().toLowerCase();
+
+        const flagPath = `../imgs/flags/${code}.png`;
+        return `<img src="${flagPath}" alt="${code.toUpperCase()}" width="24" height="16" style="vertical-align:middle;">`;
+      }
+
+      async function loadMarks() {
+        const res = await fetch(`${API}/admin/marks/${userId}`, {
+          headers: { "x-session": token },
+        });
+        const data = await res.json();
+        const tbody = document.querySelector("#marks tbody");
+        tbody.innerHTML = "";
+
+        if (!data.length) {
+          tbody.innerHTML = `<tr><td style='justify-content: center; text-align: center;' colspan="8">Ничего не отмечено</td></tr>`;
+          return;
+        }
+
+        data.forEach((t) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td data-label="ID">${t.id}</td>
+            <td data-label="Имя">${t.name || ""}</td>
+            <td data-label="Чат">${t.chat || ""}</td>
+            <td data-label="Статус">${t.status || ""}</td>
+            <td data-label="Телефон">${t.phone || ""}</td>
+            <td data-label="Страна">${countryFlag(t.country)}</td>
+            <td data-label="Дата отметки">${t.marked_at}</td>
+            <td data-label="Действие">
+              <button onclick="unmark(${t.id}, this)">❌ Убрать отметку</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      async function unmark(id, btn) {
+        btn.disabled = true;
+        const res = await fetch(`${API}/admin/unmark/${id}`, {
+          method: "POST",
+          headers: { "x-session": token },
+        });
+        const data = await res.json();
+        if (data.ok) btn.closest("tr").remove();
+        else alert(data.error || "Ошибка снятия отметки");
+      }
+
+      loadMarks();
+    </script>
+  </body>
+</html>

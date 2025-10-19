@@ -42,6 +42,7 @@
           <th>Чат</th>
           <th>Статус</th>
           <th>Телефон</th>
+          <th>Страна</th>
           <th>Добавлен</th>
           <th>Действие</th>
         </tr>
@@ -57,6 +58,14 @@
 
       const token = localStorage.getItem("session");
       if (!token) location.href = "index.html";
+
+      function countryFlag(code) {
+        if (!code) return "";
+        code = code.trim().toLowerCase();
+
+        const flagPath = `../imgs/flags/${code}.png`;
+        return `<img src="${flagPath}" alt="${code.toUpperCase()}" width="24" height="16" style="vertical-align:middle;">`;
+      }
 
       document.addEventListener("click", async (e) => {
         const el = e.target.closest(".copyable");
@@ -106,12 +115,10 @@
           anim.destroy();
           loader.remove();
 
-          console.log(data);
-
           if (!data || data.length === 0) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-    <td colspan="7" style="text-align:center; justify-content:center; padding:20px; color:#888;">
+    <td colspan="8" style="text-align:center; justify-content:center; padding:20px; color:#888;">
       Ничего не найдено
     </td>
   `;
@@ -129,6 +136,7 @@
           <td class="copyable" data-label="Чат">${r.chat || "-"}</td>
           <td data-label="Статус">${r.status || "-"}</td>
           <td class="copyable" data-label="Телефон">${r.phone || "-"}</td>
+          <td data-label="Страна">${countryFlag(r.country)}</td>
           <td data-label="Добавлен">${
             r.marked_at?.replace("T", " ").slice(0, 19) || "-"
           }</td>

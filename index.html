@@ -2,57 +2,180 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="imgs/logo.png" type="image/x-icon">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="imgs/logo.png" type="image/x-icon" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Вход | Chocolate Eye</title>
     <link rel="stylesheet" href="static/style.css" />
-
     <style>
-      body{
+      body {
         display: flex;
         align-items: center;
-        /* justify-content: center; */
         height: 100vh;
+        background: #111;
+        color: #eee;
+        flex-direction: column;
+        /* justify-content: center; */
+      }
+
+      #loader {
+        position: absolute;
+
+        background-color: #111;
+        border-radius: 10px;
+
+        box-shadow: 0 0 15px rgba(34, 34, 34, 0.1);
+
+        padding: 10px;
+      }
+
+      .card {
+        margin-top: 80px;
+        background: #1b1b1b;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        text-align: center;
+        width: 320px;
+      }
+
+      input {
+        width: 100%;
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        border: none;
+        outline: none;
+      }
+
+      button {
+        width: 100%;
+        margin-top: 15px;
+        padding: 10px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        background: #a45c3d;
+        color: white;
+        font-weight: bold;
+        transition: 0.2s;
+      }
+
+      button:hover {
+        background: #c4704a;
+      }
+
+      .block{
+        width: 100%;
+        height: 100%;
+
+        position: absolute;
+
+        background-color: #111111b4;
+      }
+
+      .hidden {
+        display: none;
       }
     </style>
   </head>
+
   <body>
+    <div id="block" class="block hidden"></div>
     <div class="card">
-      <img src="imgs/logo.png" width="160px" alt="">
-      <h2>Авторизация | Вход</h2>
-      <input id="name" placeholder="Ваше имя" />
-      <input id="passOwn" placeholder="Личный пароль" type="password" />
-      <input id="pass" placeholder="Общий пароль" type="password" />
-      <button id="reg">Войти</button>
+      <img src="imgs/logo.png" width="120px" alt="logo" />
+      <h2>Вход по почте</h2>
+
+      <div
+        id="loader"
+        class="hidden"
+        style="width: 80px; margin: 20px auto"
+      ></div>
+
+      <div id="step1">
+        <input id="email" placeholder="Ваша почта" type="email" />
+        <button id="sendCode">Получить код</button>
+      </div>
+
+      <div id="step2" class="hidden">
+        <p style="font-size: 14px; opacity: 0.8">Код отправлен на почту</p>
+        <input id="code" placeholder="Введите код из письма" />
+        <button id="confirmCode">Войти</button>
+      </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+
     <script>
-      const API = "https://chocolateeyeserver-production.up.railway.app/api";
+      const loaderContainer = document.getElementById("loader");
+      const blockContainer = document.getElementById("block");
+      const loader = lottie.loadAnimation({
+        container: loaderContainer,
+        renderer: "svg",
+        loop: true,
+        autoplay: false,
+        path: "imgs/loader.json",
+      });
+
+      function showLoader() {
+        loaderContainer.classList.remove("hidden");
+        blockContainer.classList.remove("hidden");
+        loader.play();
+      }
+      
+      function hideLoader() {
+        loader.stop();
+        loaderContainer.classList.add("hidden");
+        blockContainer.classList.add("hidden");
+      }
+
       // const API = "http://127.0.0.1:3000/api";
+      const API = "https://chocolateeyeserver-production.up.railway.app/api";
+      
+      const emailInput = document.getElementById("email");
+      const codeInput = document.getElementById("code");
+      const step1 = document.getElementById("step1");
+      const step2 = document.getElementById("step2");
 
-      document.getElementById("reg").onclick = async () => {
-        const nameEl = document.getElementById("name");
-        const passOwn = document.getElementById("passOwn");
-        const passEl = document.getElementById("pass");
+      document.getElementById("sendCode").onclick = async () => {
+        const email = emailInput.value.trim();
+        if (!email) return alert("Введите почту");
 
-        const body = {
-          name: nameEl.value.trim(),
-          shared_password: passEl.value.trim(),
-          password: passOwn.value.trim(),
-        };
-
-        const res = await fetch(`${API}/register`, {
+        showLoader();
+        const res = await fetch(`${API}/request-code`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ email }),
         });
+        hideLoader();
+
+        const data = await res.json();
+        if (data.ok) {
+          step1.classList.add("hidden");
+          step2.classList.remove("hidden");
+        } else {
+          alert(data.error || "Ошибка при отправке кода");
+        }
+      };
+
+      document.getElementById("confirmCode").onclick = async () => {
+        const email = emailInput.value.trim();
+        const code = codeInput.value.trim();
+        if (!code) return alert("Введите код");
+
+        showLoader();
+        const res = await fetch(`${API}/confirm-code`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, code }),
+        });
+        hideLoader();
 
         const data = await res.json();
         if (data.token) {
           localStorage.setItem("session", data.token);
           location.href = "static/main.html";
         } else {
-          alert(data.error || "Ошибка регистрации");
+          alert(data.error || "Ошибка подтверждения");
         }
       };
     </script>

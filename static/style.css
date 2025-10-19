@@ -4,8 +4,8 @@
   box-sizing: border-box;
 }
 
-.count-display{
-  margin-top: 10px;
+.count-display {
+  width: 100%;
   text-align: center;
 }
 
@@ -57,6 +57,10 @@ body {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s;
+}
+
+.hidden {
+  display: none;
 }
 
 .copyable.copied::after {
@@ -134,6 +138,7 @@ label {
   color: #eee;
 }
 
+
 .header {
   display: flex;
   flex-direction: column;
@@ -147,6 +152,7 @@ label {
 td {
   word-break: break-word;
   overflow-wrap: anywhere;
+  align-items: center;
   white-space: normal;
 }
 

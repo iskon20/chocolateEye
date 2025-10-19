@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="../imgs/logo.png" type="image/x-icon" />
+    
+    <title>Админ панель | Chocolate Eye</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 6px;
+      }
+      th {
+        background: #222;
+        color: #fff;
+      }
+      button {
+        margin: 2px;
+      }
+
+      @media screen and (max-width: 1024px) {
+        .responsive-table thead {
+          display: none;
+        }
+
+        .logo {
+          width: 40%;
+        }
+
+        button,
+        input,
+        select,
+        label {
+          padding: 12px 20px !important;
+        }
+
+        .responsive-table tr {
+          display: block;
+          margin-bottom: 10px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          padding: 6px;
+        }
+
+        .responsive-table td {
+          display: flex;
+          justify-content: space-between;
+          border: none;
+          border-bottom: 1px solid #222;
+          padding: 6px 10px;
+        }
+
+        .responsive-table td::before {
+          content: attr(data-label);
+          font-weight: 600;
+          color: #555;
+        }
+
+        .responsive-table td:last-child {
+          border-bottom: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>⚙️ Админ панель</h1>
+
+    <button style="width: max-content;"
+      onclick="
+        location.href = 'main.html';"
+    >
+      Назад
+    </button>
+
+    <section>
+      <h2>👥 Пользователи</h2>
+      <table class="responsive-table" id="users">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Создан</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>📧 Whitelist</h2>
+      <input id="emailAdd" placeholder="Email" />
+      <button onclick="addWhite()">Добавить</button>
+      <table class="responsive-table" id="whitelist">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <script>
+      const API = "https://chocolateeyeserver-production.up.railway.app/api";
+      // const API = "http://127.0.0.1:3000/api";
+      const token = localStorage.getItem("session");
+
+      async function loadUsers() {
+        const token = localStorage.getItem("session");
+        const res = await fetch(`${API}/admin/users`, {
+          headers: { "x-session": token },
+        });
+        const data = await res.json();
+
+        const tbody = document.querySelector("#users tbody");
+        tbody.innerHTML = "";
+
+        data.forEach((u) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+      <td class="copyable" data-label="ID">${u.id}</td>
+      <td class="copyable" data-label="Email">${u.email}</td>
+      <td data-label="Создан">${u.created_at}</td>
+      <td data-label="Действие">
+        <div>
+        <button onclick="delUser(${u.id})">🗑</button>
+        <button onclick="location.href='marks.html?user=${u.id}'">📝 Отмеченные</button>
+        </div>
+        </td>
+    `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      async function delUser(id) {
+        if (!confirm("Удалить пользователя?")) return;
+        await fetch(`${API}/admin/users/${id}`, {
+          method: "DELETE",
+          headers: { "x-session": token },
+        });
+        loadUsers();
+      }
+
+      async function loadWhitelist() {
+        const token = localStorage.getItem("session");
+        const res = await fetch(`${API}/admin/whitelist`, {
+          headers: { "x-session": token },
+        });
+
+        const data = await res.json();
+        const tbody = document.querySelector("#whitelist tbody");
+        tbody.innerHTML = "";
+
+        data.forEach((w) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+      <td class="copyable" data-label="ID">${w.id}</td>
+      <td class="copyable" data-label="Email">${w.email}</td>
+      <td data-label="Действие">
+        <button onclick="delWhite(${w.id})">🗑</button>
+      </td>
+    `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      async function addWhite() {
+        const email = document.getElementById("emailAdd").value.trim();
+        if (!email) return alert("Введите email");
+        await fetch(`${API}/admin/whitelist`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-session": token },
+          body: JSON.stringify({ email }),
+        });
+        loadWhitelist();
+      }
+
+      async function delWhite(id) {
+        await fetch(`${API}/admin/whitelist/${id}`, {
+          method: "DELETE",
+          headers: { "x-session": token },
+        });
+        loadWhitelist();
+      }
+
+      loadUsers();
+      loadWhitelist();
+    </script>
+  </body>
+</html>

@@ -28,15 +28,32 @@
           <option value="7">7-значные</option>
         </select>
 
+        <select id="country">
+          <option value="">Страна</option>
+          <option value="uz">Узбекистан</option>
+          <option value="ua">Украина</option>
+          <option value="ru">Россия</option>
+          <option value="tr">Турция</option>
+        </select>
+
         <label><input type="checkbox" id="has_phone" /> Только с номером</label>
         <label
           ><input type="checkbox" id="not_recently" /> Только не RECENTLY</label
         >
         <button id="refresh">🔄 Обновить</button>
         <button onclick="location.href = 'profile.html';">Сохраненные</button>
-      </div>
-      <div id="total-count" class="count-display">
-        Загрузка кол-ва записей...
+
+        <button
+          id="adminBtn"
+          class="hidden"
+          onclick="location.href='admin.html'"
+        >
+          ⚙️ Админ-панель
+        </button>
+
+        <div id="total-count" class="count-display">
+          Загрузка кол-ва записей...
+        </div>
       </div>
     </div>
 
@@ -48,6 +65,7 @@
           <th>Чат</th>
           <th>Статус</th>
           <th>Телефон</th>
+          <th>Страна</th>
           <th>Добавлен</th>
           <th>Действие</th>
         </tr>

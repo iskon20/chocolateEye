@@ -25,6 +25,7 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+
 function daysAgoLabel(ts) {
   if (!ts) return "";
   const date = new Date(ts);
@@ -52,8 +53,17 @@ loader.id = "loader";
 loader.style.width = "120px";
 loader.style.margin = "30px auto";
 
+function countryFlag(code) {
+  if (!code) return "";
+  code = code.trim().toLowerCase();
+
+  const flagPath = `../imgs/flags/${code}.png`;
+  return `<img src="${flagPath}" alt="${code.toUpperCase()}" width="24" height="16" style="vertical-align:middle;">`;
+}
+
 async function loadTargets() {
   const sort = document.getElementById("sort").value;
+  const country = document.getElementById("country").value;
   const idLength = document.getElementById("id_length").value;
   const hasPhone = document.getElementById("has_phone").checked;
   const notRecently = document.getElementById("not_recently").checked;
@@ -61,9 +71,8 @@ async function loadTargets() {
 
   const tbody = document.querySelector("#list tbody");
   tbody.innerHTML = "";
-  
+
   tbody.parentElement.after(loader);
-  
 
   document.getElementById("total-count").innerText = "Загрузка...";
 
@@ -84,6 +93,7 @@ async function loadTargets() {
   });
 
   if (idLength) params.set("id_length", idLength);
+  if (country) params.set("country", country);
 
   try {
     const res = await fetch(`${API}/targets?${params}`, {
@@ -115,7 +125,7 @@ async function loadTargets() {
     if (!data.data || data.data.length === 0) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-    <td colspan="7" style="text-align:center; justify-content:center; padding:20px; color:#888;">
+    <td colspan="8" style="text-align:center; justify-content:center; padding:20px; color:#888;">
       Ничего не найдено
     </td>
   `;
@@ -134,6 +144,7 @@ async function loadTargets() {
     <td class="copyable" data-label="Чат">${t.chat || ""}</td>
     <td data-label="Статус">${t.status || ""}</td>
     <td class="copyable" data-label="Телефон">${t.phone || ""}</td>
+    <td data-label="Страна">${countryFlag(t.country)}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td data-label="Действие">
       <button class="mark-btn" onclick="mark(${t.id}, this)">Забрать</button>
@@ -148,6 +159,24 @@ async function loadTargets() {
   } catch (e) {
     anim.destroy();
     loader.textContent = "Ошибка загрузки";
+  }
+}
+
+async function checkAdmin() {
+  const token = localStorage.getItem("session");
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${API}/me`, {
+      headers: { "x-session": token },
+    });
+    const data = await res.json();
+
+    if (data.is_admin) {
+      document.getElementById("adminBtn").classList.remove("hidden");
+    }
+  } catch (e) {
+    console.error("Ошибка проверки админа:", e);
   }
 }
 
@@ -168,6 +197,7 @@ document.getElementById("refresh").onclick = () => {
   loadTargets();
 };
 document.getElementById("sort").onchange = loadTargets;
+document.getElementById("country").onchange = loadTargets;
 document.getElementById("id_length").onchange = loadTargets;
 document.getElementById("has_phone").onchange = loadTargets;
 document.getElementById("not_recently").onchange = loadTargets;
@@ -185,3 +215,4 @@ document.getElementById("next").onclick = () => {
 };
 
 loadTargets();
+checkAdmin();
