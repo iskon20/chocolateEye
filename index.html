@@ -64,7 +64,7 @@
         background: #c4704a;
       }
 
-      .block{
+      .block {
         width: 100%;
         height: 100%;
 
@@ -83,7 +83,14 @@
     <div id="block" class="block hidden"></div>
     <div class="card">
       <img src="imgs/logo.png" width="120px" alt="logo" />
-      <h2>Вход по почте</h2>
+      <h2>Вход через ТГ</h2>
+
+      <div>
+        <p style="color: red">!!!ДЛЯ НАЧАЛА ЗАПУСТИТЕ БОТА!!!</p>
+        <a href="https://t.me/chocolateCodes_bot"
+          >https://t.me/chocolateCodes_bot</a
+        >
+      </div>
 
       <div
         id="loader"
@@ -92,12 +99,12 @@
       ></div>
 
       <div id="step1">
-        <input id="email" placeholder="Ваша почта" type="email" />
+        <input id="email" placeholder="Ваш телеграм ID" />
         <button id="sendCode">Получить код</button>
       </div>
 
       <div id="step2" class="hidden">
-        <p style="font-size: 14px; opacity: 0.8">Код отправлен на почту</p>
+        <p style="font-size: 14px; opacity: 0.8">Код отправлен ботом</p>
         <input id="code" placeholder="Введите код из письма" />
         <button id="confirmCode">Войти</button>
       </div>
@@ -121,7 +128,7 @@
         blockContainer.classList.remove("hidden");
         loader.play();
       }
-      
+
       function hideLoader() {
         loader.stop();
         loaderContainer.classList.add("hidden");
@@ -130,7 +137,7 @@
 
       // const API = "http://127.0.0.1:3000/api";
       const API = "https://chocolateeyeserver-production.up.railway.app/api";
-      
+
       const emailInput = document.getElementById("email");
       const codeInput = document.getElementById("code");
       const step1 = document.getElementById("step1");
@@ -138,7 +145,7 @@
 
       document.getElementById("sendCode").onclick = async () => {
         const email = emailInput.value.trim();
-        if (!email) return alert("Введите почту");
+        if (!email) return alert("Введите ваш телеграм ID");
 
         showLoader();
         const res = await fetch(`${API}/request-code`, {
