@@ -63,6 +63,23 @@ body {
   transition: opacity 0.3s;
 }
 
+#unlog{
+  padding: 10px 5px;
+
+  position: absolute;
+
+  top: 10;
+  left: 10;
+
+  background-color: red;
+
+  border-radius: 5px;
+
+  color: #181818; 
+
+  cursor: pointer;
+}
+
 .hidden {
   display: none !important;
 }
