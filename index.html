@@ -136,7 +136,7 @@
           if (!res.ok) return; // невалиден — ничего не делаем
 
           const data = await res.json();
-          if (data && data.id) {
+          if (data) {
             // токен валиден
             location.href = "static/main.html";
           }
@@ -182,3 +182,4 @@
     </script>
   </body>
 </html>
+
