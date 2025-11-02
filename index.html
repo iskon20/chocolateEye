@@ -136,9 +136,10 @@
           if (!res.ok) return; // невалиден — ничего не делаем
 
           const data = await res.json();
-          if (data) {
+          if (data && data.email) {
             // токен валиден
             location.href = "static/main.html";
+            return
           }
         } catch (e) {
           console.warn("Ошибка проверки токена:", e);
@@ -170,7 +171,7 @@
           }
         } catch (err) {
           hideLoader();
-          // alert("Ошибка соединения с сервером");
+          alert("Ошибка соединения с сервером");
           console.error(err);
         }
       }
