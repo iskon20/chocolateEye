@@ -79,7 +79,13 @@
 
     <div class="card">
       <div>
-        <img class="userSelect" draggable="false" src="imgs/logo.png" width="120px" alt="logo" />
+        <img
+          class="userSelect"
+          draggable="false"
+          src="imgs/logo.png"
+          width="120px"
+          alt="logo"
+        />
         <h2>Вход через Telegram</h2>
       </div>
 
@@ -93,8 +99,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script>
-      // const API = "http://127.0.0.1:3000/api";
       const API = "https://chocolateeyeserver-production.up.railway.app/api";
+      // const API = "http://127.0.0.1:3000/api";
 
       const overlay = document.getElementById("overlay");
       const loaderContainer = document.getElementById("loader");
@@ -115,6 +121,28 @@
       function hideLoader() {
         overlay.classList.add("hidden");
         loader.stop();
+      }
+
+      // Проверка токена при загрузке страницы
+      async function checkExistingSession() {
+        const token = localStorage.getItem("session");
+        if (!token) return; // токена нет — просто остаёмся на странице
+
+        try {
+          const res = await fetch(`${API}/me`, {
+            headers: { "x-session": token },
+          });
+
+          if (!res.ok) return; // невалиден — ничего не делаем
+
+          const data = await res.json();
+          if (data && data.id) {
+            // токен валиден
+            location.href = "static/main.html";
+          }
+        } catch (e) {
+          console.warn("Ошибка проверки токена:", e);
+        }
       }
 
       async function handleTempToken() {
@@ -147,7 +175,10 @@
         }
       }
 
-      handleTempToken();
+      (async () => {
+        await checkExistingSession();
+        await handleTempToken();
+      })();
     </script>
   </body>
 </html>
