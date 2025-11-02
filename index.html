@@ -155,6 +155,7 @@
         } catch (e) {
           console.warn("Ошибка проверки токена:", e);
         }
+        await handleTempToken();
       }
 
       async function handleTempToken() {
