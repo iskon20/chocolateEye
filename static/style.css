@@ -9,6 +9,10 @@
   text-align: center;
 }
 
+.userSelect{
+  user-select: none;
+}
+
 .card {
   display: flex;
   flex-direction: column;
@@ -17,7 +21,7 @@
   text-align: center;
 
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
 
   width: 40%;
 }
@@ -60,7 +64,7 @@ body {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .copyable.copied::after {

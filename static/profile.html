@@ -40,8 +40,8 @@
           <th>ID</th>
           <th>Имя</th>
           <th>Чат</th>
-          <th>Статус</th>
-          <th>Телефон</th>
+          <th class="status_hidden hidden">Статус</th>
+          <th class="status_hidden hidden">Телефон</th>
           <th>Страна</th>
           <th>Добавлен</th>
           <th>Действие</th>
@@ -55,9 +55,6 @@
     <script>
       const API = "https://chocolateeyeserver-production.up.railway.app/api";
       // const API = "http://127.0.0.1:3000/api";
-
-      const token = localStorage.getItem("session");
-      if (!token) location.href = "index.html";
 
       function countryFlag(code) {
         if (!code) return "";
@@ -88,6 +85,7 @@
       });
 
       const loader = document.createElement("div");
+      const token = localStorage.getItem("session");
       loader.id = "loader";
       loader.classList.add("loader");
       loader.style.width = "120px";
@@ -115,6 +113,8 @@
           anim.destroy();
           loader.remove();
 
+          if (data.redirect) window.location.href = data.redirect;
+
           if (!data || data.length === 0) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
@@ -134,8 +134,12 @@
               .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
           <td class="copyable" data-label="Имя">${r.name || "-"}</td>
           <td class="copyable" data-label="Чат">${r.chat || "-"}</td>
-          <td data-label="Статус">${r.status || "-"}</td>
-          <td class="copyable" data-label="Телефон">${r.phone || "-"}</td>
+          <td class="${window.isCleared ? "hidden" : ""}" data-label="Статус">${
+              r.status || "-"
+            }</td>
+          <td class="copyable ${
+            window.isCleared ? "hidden" : ""
+          }" data-label="Телефон">${r.phone || "-"}</td>
           <td data-label="Страна">${countryFlag(r.country)}</td>
           <td data-label="Добавлен">${
             r.marked_at?.replace("T", " ").slice(0, 19) || "-"
@@ -154,6 +158,7 @@
           });
         } catch (e) {
           anim.destroy();
+          console.log(e);
           loader.textContent = "Ошибка загрузки";
         }
       }
@@ -184,6 +189,29 @@
         location.href = "main.html";
       }
 
+      async function checkAdmin() {
+        const token = localStorage.getItem("session");
+        if (!token) return;
+
+        try {
+          const res = await fetch(`${API}/me`, {
+            headers: { "x-session": token },
+          });
+          const data = await res.json()
+
+          if (!data.cleared) {
+            document
+              .querySelectorAll(".status_hidden.hidden")
+              .forEach((el) => el.classList.remove("hidden"));
+          }
+
+          window.isCleared = data.cleared;
+        } catch (e) {
+          console.error("Ошибка проверки админа:", e);
+        }
+      }
+      
+      checkAdmin()
       load();
     </script>
   </body>

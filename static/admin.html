@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="../imgs/logo.png" type="image/x-icon" />
-    
+
     <title>Админ панель | Chocolate Eye</title>
     <link rel="stylesheet" href="style.css" />
     <style>
@@ -72,7 +72,8 @@
   <body>
     <h1>⚙️ Админ панель</h1>
 
-    <button style="width: max-content;"
+    <button
+      style="width: max-content"
       onclick="
         location.href = 'main.html';"
     >
@@ -103,7 +104,8 @@
           <tr>
             <th>ID</th>
             <th>Email</th>
-            <th></th>
+            <th>скрыть</th>
+            <th>удалить</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -164,13 +166,28 @@
         data.forEach((w) => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
-      <td class="copyable" data-label="ID">${w.id}</td>
-      <td class="copyable" data-label="Email">${w.email}</td>
-      <td data-label="Действие">
-        <button onclick="delWhite(${w.id})">🗑</button>
-      </td>
-    `;
+  <td>${w.id}</td>
+  <td>${w.email}</td>
+  <td>
+    <input type="checkbox" ${
+      w.hidden_mode ? "checked" : ""
+    } onchange="toggleHidden(${w.id}, this.checked)">
+  </td>
+  <td><button onclick="delWhite(${w.id})">🗑</button></td>
+`;
           tbody.appendChild(tr);
+        });
+      }
+
+      async function toggleHidden(id, enabled) {
+        const token = localStorage.getItem("session");
+        await fetch(`${API}/admin/whitelist/${id}/hidden`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-session": token,
+          },
+          body: JSON.stringify({ hidden: enabled }),
         });
       }
 

@@ -25,7 +25,6 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-
 function daysAgoLabel(ts) {
   if (!ts) return "";
   const date = new Date(ts);
@@ -61,7 +60,7 @@ function countryFlag(code) {
   return `<img src="${flagPath}" alt="${code.toUpperCase()}" width="24" height="16" style="vertical-align:middle;">`;
 }
 
-async function loadTargets() {
+async function loadTargets(cleared) {
   const sort = document.getElementById("sort").value;
   const country = document.getElementById("country").value;
   const idLength = document.getElementById("id_length").value;
@@ -104,10 +103,7 @@ async function loadTargets() {
     anim.destroy();
     loader.remove();
 
-    if (res.status === 401 || res.status === 403) {
-      window.location.href = "../index.html";
-      return;
-    }
+    if (data.redirect) window.location.href = data.redirect;
 
     const resCount = await fetch(`${API}/count`, {
       headers: { "x-session": token },
@@ -142,8 +138,12 @@ async function loadTargets() {
 
     <td class="copyable" data-label="Имя">${t.name || ""}</td>
     <td class="copyable" data-label="Чат">${t.chat || ""}</td>
-    <td data-label="Статус">${t.status || ""}</td>
-    <td class="copyable" data-label="Телефон">${t.phone || ""}</td>
+    <td class=" ${window.isCleared ? "hidden" : ""}" data-label="Статус">${
+        t.status || ""
+      }</td>
+    <td class="copyable  ${
+      window.isCleared ? "hidden" : ""
+    }" data-label="Телефон">${t.phone || ""}</td>
     <td data-label="Страна">${countryFlag(t.country)}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td data-label="Действие">
@@ -175,6 +175,14 @@ async function checkAdmin() {
     if (data.is_admin) {
       document.getElementById("adminBtn").classList.remove("hidden");
     }
+
+    if (!data.cleared) {
+      document
+        .querySelectorAll(".status_hidden.hidden")
+        .forEach((el) => el.classList.remove("hidden"));
+    }
+
+    window.isCleared = data.cleared;
   } catch (e) {
     console.error("Ошибка проверки админа:", e);
   }
@@ -194,8 +202,10 @@ async function mark(id, btn) {
 
 document.getElementById("refresh").onclick = () => {
   page = 1;
+  checkAdmin();
   loadTargets();
 };
+
 document.getElementById("sort").onchange = loadTargets;
 document.getElementById("country").onchange = loadTargets;
 document.getElementById("id_length").onchange = loadTargets;
@@ -214,5 +224,5 @@ document.getElementById("next").onclick = () => {
   }
 };
 
-loadTargets();
 checkAdmin();
+loadTargets();

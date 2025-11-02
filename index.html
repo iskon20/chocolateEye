@@ -6,115 +6,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Вход | Chocolate Eye</title>
     <link rel="stylesheet" href="static/style.css" />
+
     <style>
       body {
         display: flex;
+        flex-direction: column;
         align-items: center;
+        justify-content: center;
         height: 100vh;
         background: #111;
         color: #eee;
-        flex-direction: column;
-        /* justify-content: center; */
-      }
-
-      #loader {
-        position: absolute;
-
-        background-color: #111;
-        border-radius: 10px;
-
-        box-shadow: 0 0 15px rgba(34, 34, 34, 0.1);
-
-        padding: 10px;
+        margin: 0;
+        font-family: sans-serif;
       }
 
       .card {
-        margin-top: 80px;
         background: #1b1b1b;
         padding: 30px;
+        height: 320px;
         border-radius: 20px;
         box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
         text-align: center;
         width: 320px;
       }
 
-      input {
+      a.btn {
+        display: block;
+        text-align: center;
         width: 100%;
-        margin-top: 10px;
-        padding: 10px;
+        margin-top: 20px;
+        padding: 12px;
         border-radius: 10px;
-        border: none;
-        outline: none;
-      }
-
-      button {
-        width: 100%;
-        margin-top: 15px;
-        padding: 10px;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
         background: #a45c3d;
         color: white;
         font-weight: bold;
+        text-decoration: none;
         transition: 0.2s;
       }
 
-      button:hover {
+      a.btn:hover {
         background: #c4704a;
       }
 
-      .block {
-        width: 100%;
-        height: 100%;
-
-        position: absolute;
-
-        background-color: #111111b4;
+      #loader {
+        width: 100px;
+        height: 100px;
+        margin: 30px auto;
       }
 
       .hidden {
-        display: none;
+        display: none !important;
+      }
+
+      .block {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #111111b4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
     </style>
   </head>
 
   <body>
-    <div id="block" class="block hidden"></div>
+    <div id="overlay" class="hidden block">
+      <div id="loader"></div>
+    </div>
+
     <div class="card">
-      <img src="imgs/logo.png" width="120px" alt="logo" />
-      <h2>Вход через ТГ</h2>
-
       <div>
-        <p style="color: red">!!!ДЛЯ НАЧАЛА ЗАПУСТИТЕ БОТА!!!</p>
-        <a href="https://t.me/chocolateCodes_bot"
-          >https://t.me/chocolateCodes_bot</a
-        >
+        <img class="userSelect" draggable="false" src="imgs/logo.png" width="120px" alt="logo" />
+        <h2>Вход через Telegram</h2>
       </div>
 
-      <div
-        id="loader"
-        class="hidden"
-        style="width: 80px; margin: 20px auto"
-      ></div>
-
-      <div id="step1">
-        <input id="email" placeholder="Ваш телеграм ID" />
-        <button id="sendCode">Получить код</button>
-      </div>
-
-      <div id="step2" class="hidden">
-        <p style="font-size: 14px; opacity: 0.8">Код отправлен ботом</p>
-        <input id="code" placeholder="Введите код из письма" />
-        <button id="confirmCode">Войти</button>
-      </div>
+      <a
+        href="https://t.me/chocolateCodes_bot?start=login"
+        class="btn"
+        target="_blank"
+        >Войти через Telegram</a
+      >
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-
     <script>
+      // const API = "http://127.0.0.1:3000/api";
+      const API = "https://chocolateeyeserver-production.up.railway.app/api";
+
+      const overlay = document.getElementById("overlay");
       const loaderContainer = document.getElementById("loader");
-      const blockContainer = document.getElementById("block");
+
       const loader = lottie.loadAnimation({
         container: loaderContainer,
         renderer: "svg",
@@ -124,67 +108,46 @@
       });
 
       function showLoader() {
-        loaderContainer.classList.remove("hidden");
-        blockContainer.classList.remove("hidden");
+        overlay.classList.remove("hidden");
         loader.play();
       }
 
       function hideLoader() {
+        overlay.classList.add("hidden");
         loader.stop();
-        loaderContainer.classList.add("hidden");
-        blockContainer.classList.add("hidden");
       }
 
-      // const API = "http://127.0.0.1:3000/api";
-      const API = "https://chocolateeyeserver-production.up.railway.app/api";
-
-      const emailInput = document.getElementById("email");
-      const codeInput = document.getElementById("code");
-      const step1 = document.getElementById("step1");
-      const step2 = document.getElementById("step2");
-
-      document.getElementById("sendCode").onclick = async () => {
-        const email = emailInput.value.trim();
-        if (!email) return alert("Введите ваш телеграм ID");
+      async function handleTempToken() {
+        const params = new URLSearchParams(window.location.search);
+        const temp = params.get("code");
+        if (!temp) return;
 
         showLoader();
-        const res = await fetch(`${API}/request-code`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-        hideLoader();
 
-        const data = await res.json();
-        if (data.ok) {
-          step1.classList.add("hidden");
-          step2.classList.remove("hidden");
-        } else {
-          alert(data.error || "Ошибка при отправке кода");
+        try {
+          const res = await fetch(`${API}/confirm-temp-token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ temp_token: temp }),
+          });
+
+          const data = await res.json();
+          hideLoader();
+
+          if (data.token) {
+            localStorage.setItem("session", data.token);
+            location.href = "static/main.html";
+          } else {
+            alert(data.error || "Ошибка авторизации");
+          }
+        } catch (err) {
+          hideLoader();
+          alert("Ошибка соединения с сервером");
+          console.error(err);
         }
-      };
+      }
 
-      document.getElementById("confirmCode").onclick = async () => {
-        const email = emailInput.value.trim();
-        const code = codeInput.value.trim();
-        if (!code) return alert("Введите код");
-
-        showLoader();
-        const res = await fetch(`${API}/confirm-code`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, code }),
-        });
-        hideLoader();
-
-        const data = await res.json();
-        if (data.token) {
-          localStorage.setItem("session", data.token);
-          location.href = "static/main.html";
-        } else {
-          alert(data.error || "Ошибка подтверждения");
-        }
-      };
+      handleTempToken();
     </script>
   </body>
 </html>
