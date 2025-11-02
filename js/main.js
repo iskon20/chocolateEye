@@ -5,6 +5,11 @@ let page = 1,
   pages = 1,
   limit = 100;
 
+document.getElementById("unlog").addEventListener("click", () => {
+  localStorage.removeItem("session");
+  location.reload();
+});
+
 document.addEventListener("click", async (e) => {
   const el = e.target.closest(".copyable");
   if (!el) return;
