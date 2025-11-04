@@ -42,6 +42,7 @@
           <th>Чат</th>
           <th class="status_hidden hidden">Статус</th>
           <th class="status_hidden hidden">Телефон</th>
+          <th class="status_hidden hidden">Продажа</th>
           <th>Страна</th>
           <th>Добавлен</th>
           <th>Действие</th>
@@ -118,7 +119,7 @@
           if (!data || data.length === 0) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-    <td colspan="8" style="text-align:center; justify-content:center; padding:20px; color:#888;">
+    <td colspan="9" style="text-align:center; justify-content:center; padding:20px; color:#888;">
       Ничего не найдено
     </td>
   `;
@@ -140,6 +141,9 @@
           <td class="copyable ${
             window.isCleared ? "hidden" : ""
           }" data-label="Телефон">${r.phone || "-"}</td>
+          <td class="${
+            window.isCleared ? "hidden" : ""
+          }" data-label="Продажа">${r.on_sale ? "✅" : "❌"}</td>
           <td data-label="Страна">${countryFlag(r.country)}</td>
           <td data-label="Добавлен">${
             r.marked_at?.replace("T", " ").slice(0, 19) || "-"

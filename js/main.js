@@ -68,6 +68,7 @@ function countryFlag(code) {
 async function loadTargets(cleared) {
   const sort = document.getElementById("sort").value;
   const country = document.getElementById("country").value;
+  const onSale = document.getElementById("on_sale").checked;
   const idLength = document.getElementById("id_length").value;
   const hasPhone = document.getElementById("has_phone").checked;
   const notRecently = document.getElementById("not_recently").checked;
@@ -92,6 +93,7 @@ async function loadTargets(cleared) {
     page,
     limit,
     sort,
+    on_sale: onSale,
     has_phone: hasPhone,
     not_recently: notRecently,
   });
@@ -126,7 +128,7 @@ async function loadTargets(cleared) {
     if (!data.data || data.data.length === 0) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-    <td colspan="8" style="text-align:center; justify-content:center; padding:20px; color:#888;">
+    <td colspan="9" style="text-align:center; justify-content:center; padding:20px; color:#888;">
       Ничего не найдено
     </td>
   `;
@@ -149,6 +151,9 @@ async function loadTargets(cleared) {
     <td class="copyable  ${
       window.isCleared ? "hidden" : ""
     }" data-label="Телефон">${t.phone || ""}</td>
+    <td class="${
+      window.isCleared ? "hidden" : ""
+    }" data-label="Продажа">${t.on_sale ? "✅" : "❌"}</td>
     <td data-label="Страна">${countryFlag(t.country)}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td data-label="Действие">
@@ -213,6 +218,7 @@ document.getElementById("refresh").onclick = () => {
 
 document.getElementById("sort").onchange = loadTargets;
 document.getElementById("country").onchange = loadTargets;
+document.getElementById("on_sale").onchange = loadTargets;
 document.getElementById("id_length").onchange = loadTargets;
 document.getElementById("has_phone").onchange = loadTargets;
 document.getElementById("not_recently").onchange = loadTargets;
