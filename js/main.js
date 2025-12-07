@@ -150,7 +150,7 @@ async function loadTargets(cleared) {
       }</td>
     <td class="copyable  ${
       window.isCleared ? "hidden" : ""
-    }" data-label="Телефон">${"+" + t.phone || ""}</td>
+    }" data-label="Телефон">${t.phone ? `+${t.phone}` : ""}</td>
     <td class="${
       window.isCleared ? "hidden" : ""
     }" data-label="Продажа">${t.on_sale ? "✅" : "❌"}</td>

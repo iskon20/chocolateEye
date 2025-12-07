@@ -140,7 +140,7 @@
             }</td>
           <td class="copyable ${
             window.isCleared ? "hidden" : ""
-          }" data-label="Телефон">${"+" + r.phone || "-"}</td>
+          }" data-label="Телефон">${r.phone ? `+${r.phone}` : "-"}</td>
           <td class="${
             window.isCleared ? "hidden" : ""
           }" data-label="Продажа">${r.on_sale ? "✅" : "❌"}</td>
