@@ -66,12 +66,6 @@ function countryFlag(code) {
 }
 
 async function loadTargets(cleared) {
-  const sort = document.getElementById("sort").value;
-  const country = document.getElementById("country").value;
-  const onSale = document.getElementById("on_sale").checked;
-  const idLength = document.getElementById("id_length").value;
-  const hasPhone = document.getElementById("has_phone").checked;
-  const notRecently = document.getElementById("not_recently").checked;
   const token = localStorage.getItem("session");
 
   const tbody = document.querySelector("#list tbody");
@@ -92,17 +86,10 @@ async function loadTargets(cleared) {
   const params = new URLSearchParams({
     page,
     limit,
-    sort,
-    on_sale: onSale,
-    has_phone: hasPhone,
-    not_recently: notRecently,
   });
 
-  if (idLength) params.set("id_length", idLength);
-  if (country) params.set("country", country);
-
   try {
-    const res = await fetch(`${API}/targets?${params}`, {
+    const res = await fetch(`${API}/usernames?${params}`, {
       headers: { "x-session": token },
     });
     const data = await res.json();
@@ -112,14 +99,18 @@ async function loadTargets(cleared) {
 
     if (data.redirect) window.location.href = data.redirect;
 
+    const resCount = await fetch(`${API}/count`, {
+      headers: { "x-session": token },
+    });
+    const count = await resCount.json();
 
-    const formatted = data.total
+    const formatted = count.total
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
     document.getElementById(
       "total-count"
-    ).innerText = `На данный момент, в базе: ${formatted} записей.`;
+    ).innerText = `На данный момент, в базе: ${formatted} записей.\nКешировано: ${data.total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} записей.`;
 
     if (!data.data || data.data.length === 0) {
       const tr = document.createElement("tr");
@@ -135,26 +126,32 @@ async function loadTargets(cleared) {
     data.data.forEach((t) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-    <td class="copyable" data-label="ID">${t.id
+    <td class="copyable" data-label="Юзер">${t.username || ""}</td>
+    <td data-label="Ссылка на ТГ">
+      ${t.username ? `
+        <a class="tg-link" href="https://t.me/${t.username}" target="_blank" rel="noopener noreferrer">
+            <img class="tg-icon" src="../imgs/telegram.svg" alt="Telegram">
+          <span class="tg-text">@${t.username}</span>
+        </a>
+      ` : ""}
+    </td>
+    <td class="copyable" data-label="Чат">${t.found_from || ""}</td>
+    <td class="copyable" data-label="ID">${t.uid
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
 
-    <td class="copyable" data-label="Имя">${t.name || ""}</td>
-    <td class="copyable" data-label="Юзер">${t.username || ""}</td>
-    <td class="copyable" data-label="Чат">${t.chat || ""}</td>
-    <td class=" ${window.isCleared ? "hidden" : ""}" data-label="Статус">${
+    <td class="${window.isCleared ? "hidden" : ""}" data-label="Статус">${
         t.status || ""
       }</td>
     <td class="copyable  ${
       window.isCleared ? "hidden" : ""
-    }" data-label="Телефон">${t.phone ? `+${t.phone}` : ""}</td>
-    <td class="${
-      window.isCleared ? "hidden" : ""
-    }" data-label="Продажа">${t.on_sale ? "✅" : "❌"}</td>
+    }" data-label="Телефон">${t.number ? `+${t.number}` : ""}</td>
     <td data-label="Страна">${countryFlag(t.country)}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td data-label="Действие">
-      <button class="mark-btn" onclick="mark(${t.id}, this)">Забрать</button>
+      <button class="mark-btn" onclick="hide(${
+        t.uid
+      }, this)">Отбраковать</button>
     </td>
   `;
       tbody.appendChild(tr);
@@ -169,6 +166,37 @@ async function loadTargets(cleared) {
   }
 }
 
+async function hide(uid, btn) {
+  const tr = btn.closest("tr");
+  const token = localStorage.getItem("session");
+
+  const isHidden = tr.classList.contains("hidden-row");
+  const newState = isHidden;
+
+  btn.disabled = true;
+
+  const res = await fetch(`${API}/usernames/toggle/${uid}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-session": token,
+    },
+    body: JSON.stringify({ in_use: newState }),
+  });
+
+  const data = await res.json();
+  btn.disabled = false;
+
+  if (!data.ok) {
+    alert("Ошибка");
+    return;
+  }
+
+  // 🔹 UI toggle
+  tr.classList.toggle("hidden-row", !newState);
+  btn.textContent = newState ? "Отбраковать" : "Вернуть";
+}
+
 async function checkAdmin() {
   const token = localStorage.getItem("session");
   if (!token) return;
@@ -178,10 +206,6 @@ async function checkAdmin() {
       headers: { "x-session": token },
     });
     const data = await res.json();
-
-    if (data.is_admin) {
-      document.getElementById("adminBtn").classList.remove("hidden");
-    }
 
     if (!data.cleared) {
       document
@@ -195,30 +219,12 @@ async function checkAdmin() {
   }
 }
 
-async function mark(id, btn) {
-  const token = localStorage.getItem("session");
-  btn.disabled = true;
-  const res = await fetch(`${API}/mark/${id}`, {
-    method: "POST",
-    headers: { "x-session": token },
-  });
-  const data = await res.json();
-  if (data.ok) btn.closest("tr").remove();
-  else alert(data.error || "Ошибка");
-}
-
 document.getElementById("refresh").onclick = () => {
   page = 1;
-  checkAdmin();
   loadTargets();
+  checkAdmin();
 };
 
-document.getElementById("sort").onchange = loadTargets;
-document.getElementById("country").onchange = loadTargets;
-document.getElementById("on_sale").onchange = loadTargets;
-document.getElementById("id_length").onchange = loadTargets;
-document.getElementById("has_phone").onchange = loadTargets;
-document.getElementById("not_recently").onchange = loadTargets;
 document.getElementById("prev").onclick = () => {
   if (page > 1) {
     page--;
@@ -232,5 +238,5 @@ document.getElementById("next").onclick = () => {
   }
 };
 
-checkAdmin();
 loadTargets();
+checkAdmin();

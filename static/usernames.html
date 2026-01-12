@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="../imgs/logo.png" type="image/x-icon" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Список ID | Chocolate Eye</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="unlog">logout</div>
+
+    <div class="toolbar">
+      <img
+        class="logo userSelect"
+        draggable="false"
+        width="20%"
+        src="../imgs/logo.png"
+        alt=""
+      />
+
+      <div>
+        <button id="refresh">🔄 Обновить</button>
+        <button onclick="location.href = 'main.html';">Назад</button>
+
+        <div id="total-count" class="count-display">
+          Загрузка кол-ва записей...
+        </div>
+      </div>
+    </div>
+
+    <table id="list" class="responsive-table">
+      <thead>
+        <tr>
+          <th>Юзер</th>
+          <th>Ссылка на ТГ</th>
+          <th>Чат</th>
+          <th>ID</th>
+          <th class="hidden status_hidden">Статус</th>
+          <th class="hidden status_hidden">Телефон</th>
+          <th>Страна</th>
+          <th>Добавлен</th>
+          <th>Действие</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="toolbar">
+      <button id="prev">← Назад</button>
+      <span id="pageinfo"></span>
+      <button id="next">Вперёд →</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script src="../js/usernames.js"></script>
+  </body>
+</html>

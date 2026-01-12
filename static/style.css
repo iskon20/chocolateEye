@@ -9,7 +9,12 @@
   text-align: center;
 }
 
-.userSelect{
+.hidden-row {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.userSelect {
   user-select: none;
 }
 
@@ -63,21 +68,65 @@ body {
   transition: opacity 0.3s;
 }
 
-#unlog{
+#unlog {
   padding: 10px 5px;
-
+  
   position: absolute;
-
+  
   top: 10;
-  left: 10;
-
+  left: 2%;
+  
   background-color: red;
 
   border-radius: 5px;
-
-  color: #ffffff; 
-
+  
+  color: #ffffff;
+  
   cursor: pointer;
+}
+
+.tg-link{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border-radius:999px;
+  text-decoration:none;
+  font-weight:600;
+  line-height:1;
+  background:rgba(0,136,204,.12);
+  color:#0088cc;
+  border:1px solid rgba(0,136,204,.25);
+  transition:transform .06s ease, background .15s ease, border-color .15s ease;
+}
+
+.tg-link:hover{
+  background:rgba(0,136,204,.18);
+  border-color:rgba(0,136,204,.35);
+}
+
+.tg-link:active{
+  transform:scale(.98);
+}
+
+.tg-icon{
+  width:20px;
+  height:20px;
+  filter: invert(39%) sepia(98%) saturate(747%) hue-rotate(176deg)
+          brightness(92%) contrast(101%);
+}
+
+.tg-text{
+  font-size:13px;
+  white-space:nowrap;
+}
+
+.usernames {
+  
+  position: absolute;
+  
+  top: 10;
+  right: 2%;
 }
 
 .hidden {
@@ -158,7 +207,6 @@ label {
   background: #222;
   color: #eee;
 }
-
 
 .header {
   display: flex;
