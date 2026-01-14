@@ -1,6 +1,7 @@
 const API = "https://chocolateeyeserver-production.up.railway.app/api";
 // const API = "http://127.0.0.1:3000/api";
 
+let savedSet = new Set();
 let page = 1,
   pages = 1,
   limit = 100;
@@ -65,6 +66,18 @@ function countryFlag(code) {
   return `<img src="${flagPath}" alt="${code.toUpperCase()}" width="24" height="16" style="vertical-align:middle;">`;
 }
 
+async function loadSaved() {
+  const token = localStorage.getItem("session");
+  const res = await fetch(`${API}/saved`, {
+    headers: { "x-session": token },
+  });
+
+  const result = await res.json();
+  const arr = result.data || [];
+
+  savedSet = new Set(arr.map((x) => x.uid));
+}
+
 async function loadTargets(cleared) {
   const token = localStorage.getItem("session");
 
@@ -89,6 +102,8 @@ async function loadTargets(cleared) {
   });
 
   try {
+    await loadSaved();
+
     const res = await fetch(`${API}/usernames?${params}`, {
       headers: { "x-session": token },
     });
@@ -110,7 +125,9 @@ async function loadTargets(cleared) {
 
     document.getElementById(
       "total-count"
-    ).innerText = `На данный момент, в базе: ${formatted} записей.\nКешировано: ${data.total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} записей.`;
+    ).innerText = `На данный момент, в базе: ${formatted} записей.\nКешировано: ${data.total
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} записей.`;
 
     if (!data.data || data.data.length === 0) {
       const tr = document.createElement("tr");
@@ -124,16 +141,21 @@ async function loadTargets(cleared) {
     }
 
     data.data.forEach((t) => {
+      const isSaved = savedSet.has(t.uid);
       const tr = document.createElement("tr");
       tr.innerHTML = `
     <td class="copyable" data-label="Юзер">${t.username || ""}</td>
     <td data-label="Ссылка на ТГ">
-      ${t.username ? `
+      ${
+        t.username
+          ? `
         <a class="tg-link" href="https://t.me/${t.username}" target="_blank" rel="noopener noreferrer">
             <img class="tg-icon" src="../imgs/telegram.svg" alt="Telegram">
           <span class="tg-text">@${t.username}</span>
         </a>
-      ` : ""}
+      `
+          : ""
+      }
     </td>
     <td class="copyable" data-label="Чат">${t.found_from || ""}</td>
     <td class="copyable" data-label="ID">${t.uid
@@ -149,10 +171,16 @@ async function loadTargets(cleared) {
     <td data-label="Страна">${countryFlag(t.country)}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td data-label="Действие">
-      <button class="mark-btn" onclick="hide(${
-        t.uid
-      }, this)">Отбраковать</button>
-    </td>
+    <div>
+  <button class="save-btn" onclick="toggleSave(${t.uid}, this)">
+          ${isSaved ? "❌ Удалить лайк" : "⭐ Сохранить"}
+        </button>
+  <button class="mark-btn" onclick="hide(${t.uid}, this)">
+    Отбраковать
+  </button>
+  </div>
+</td>
+
   `;
       tbody.appendChild(tr);
     });
@@ -163,7 +191,32 @@ async function loadTargets(cleared) {
   } catch (e) {
     anim.destroy();
     loader.textContent = "Ошибка загрузки";
+    console.log(e);
   }
+}
+
+async function toggleSave(uid, btn) {
+  const token = localStorage.getItem("session");
+
+  btn.disabled = true;
+
+  const res = await fetch(`${API}/usernames/save/${uid}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-session": token,
+    },
+  });
+
+  const data = await res.json();
+  btn.disabled = false;
+
+  if (!data.ok) {
+    alert("Ошибка");
+    return;
+  }
+
+  btn.textContent = data.saved ? "❌ Удалить лайк" : "⭐ Сохранить";
 }
 
 async function hide(uid, btn) {

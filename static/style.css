@@ -170,6 +170,16 @@ body {
   border-radius: 5px;
   cursor: pointer;
 }
+
+.save-btn{
+  color: white;
+  border: none;
+  padding: 1vw 1.6vw;
+  border-radius: 5px;
+  cursor: pointer;
+
+}
+
 .mark-btn:disabled {
   background: #333;
   cursor: not-allowed;

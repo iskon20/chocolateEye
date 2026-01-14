@@ -4,13 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="../imgs/logo.png" type="image/x-icon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Мои отметки | Chocolate Eye</title>
+    <title>Сохранённые | Chocolate Eye</title>
     <link rel="stylesheet" href="style.css" />
+
     <style>
       button.action {
         margin: 0 3px;
-        padding: 4px 8px;
-
         padding: 1vw 2vw;
         border-radius: 6px;
         cursor: pointer;
@@ -18,27 +17,26 @@
         font-size: 13px;
       }
 
-      button.return {
-        background: #ffd966;
-      }
       button.delete {
         background: #ff4d4d;
         color: white;
       }
     </style>
   </head>
+
   <body>
     <div class="header">
       <img class="logo" width="20%" src="../imgs/logo.png" alt="" />
-      <h2>Мои отмеченные ID</h2>
+      <h2>Сохранённые карточки</h2>
       <button onclick="back()">Назад</button>
     </div>
 
     <table id="list" class="responsive-table">
       <thead>
         <tr>
+          <th>Юзер</th>
+          <th>Ссылка на тг</th>
           <th>ID</th>
-          <th>Имя</th>
           <th>Чат</th>
           <th class="status_hidden hidden">Статус</th>
           <th class="status_hidden hidden">Телефон</th>
@@ -57,12 +55,12 @@
       // const API = "https://chocolateeyeserver-production.up.railway.app/api";
       const API = "http://127.0.0.1:3000/api";
 
+      const token = localStorage.getItem("session");
+
       function countryFlag(code) {
         if (!code) return "";
         code = code.trim().toLowerCase();
-
-        const flagPath = `../imgs/flags/${code}.png`;
-        return `<img src="${flagPath}" alt="${code.toUpperCase()}" width="24" height="16" style="vertical-align:middle;">`;
+        return `<img src="../imgs/flags/${code}.png" width="24" height="16">`;
       }
 
       document.addEventListener("click", async (e) => {
@@ -70,25 +68,20 @@
         if (!el) return;
 
         let text = el.innerText.trim();
-
-        if (el.getAttribute("data-label") === "ID") {
-          text = text.replace(/\s|&nbsp;/g, "").replace(/\u00A0/g, "");
+        if (el.dataset.label === "ID") {
+          text = text.replace(/\s|&nbsp;|\u00A0/g, "");
         }
 
         try {
           await navigator.clipboard.writeText(text);
           el.classList.add("copied");
-
-          setTimeout(() => el.classList.remove("copied"), 1000);
-        } catch (err) {
-          console.warn("Ошибка копирования:", err);
-        }
+          setTimeout(() => el.classList.remove("copied"), 800);
+        } catch {}
       });
 
       const loader = document.createElement("div");
-      const token = localStorage.getItem("session");
       loader.id = "loader";
-      loader.classList.add("loader");
+      loader.className = "loader";
       loader.style.width = "120px";
       loader.style.margin = "30px auto";
 
@@ -106,23 +99,22 @@
         });
 
         try {
-          const res = await fetch(`${API}/my-marks`, {
-            headers: { "x-session": token },
-          });
-          const data = await res.json();
-
           anim.destroy();
           loader.remove();
 
-          if (data.redirect) window.location.href = data.redirect;
+          const res = await fetch(`${API}/saved`, {
+            headers: { "x-session": token },
+          });
 
-          if (!data || data.length === 0) {
+          const result = await res.json();
+          const data = result.data;
+
+          if (!Array.isArray(data) || data.length === 0) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-    <td colspan="9" style="text-align:center; justify-content:center; padding:20px; color:#888;">
-      Ничего не найдено
-    </td>
-  `;
+            <td colspan="10" style="text-align:center; justify-content: center; padding:20px; color:#888;">
+            Ничего не найдено
+            </td>`;
             tbody.appendChild(tr);
             return;
           }
@@ -130,78 +122,87 @@
           data.forEach((r) => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-            <td class="copyable" data-label="ID">${r.id
-              .toString()
-              .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
-          <td class="copyable" data-label="Имя">${r.name || "-"}</td>
-          <td class="copyable" data-label="Чат">${r.chat || "-"}</td>
-          <td class="${window.isCleared ? "hidden" : ""}" data-label="Статус">${
-              r.status || "-"
-            }</td>
-          <td class="copyable ${
-            window.isCleared ? "hidden" : ""
-          }" data-label="Телефон">${r.phone ? `+${r.phone}` : "-"}</td>
-          <td class="${
-            window.isCleared ? "hidden" : ""
-          }" data-label="Продажа">${r.on_sale ? "✅" : "❌"}</td>
-          <td data-label="Страна">${countryFlag(r.country)}</td>
-          <td data-label="Добавлен">${
-            r.marked_at?.replace("T", " ").slice(0, 19) || "-"
-          }</td>
-          <td data-label="Действия">
-            <div>
-              <button class="action return" onclick="unmark(${
-                r.id
-              })">Вернуть</button>
-                <button class="action delete" onclick="del(${
-                  r.id
-                })">Удалить</button>
-                  </div>
-          </td>`;
+            <td class="copyable" data-label="Юзер">${r.username || "-"}</td>
+            <td data-label="Ссылка на ТГ">
+      ${
+        r.username
+          ? `
+        <a class="tg-link" href="https://t.me/${r.username}" target="_blank" rel="noopener noreferrer">
+            <img class="tg-icon" src="../imgs/telegram.svg" alt="Telegram">
+          <span class="tg-text">@${r.username}</span>
+        </a>
+      `
+          : ""
+      }
+    </td>
+              <td class="copyable" data-label="ID">
+                ${r.uid.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}
+              </td>
+              <td class="copyable" data-label="Чат">${r.found_from || "-"}</td>
+
+              <td class="${
+                window.isCleared ? "hidden" : ""
+              }" data-label="Статус">
+                ${r.status || "-"}
+              </td>
+
+              <td class="copyable ${
+                window.isCleared ? "hidden" : ""
+              }" data-label="Телефон">
+                ${r.number ? `+${r.number}` : "-"}
+              </td>
+
+              <td class="${
+                window.isCleared ? "hidden" : ""
+              }" data-label="Продажа">
+                ${r.on_sale ? "✅" : "❌"}
+              </td>
+
+              <td data-label="Страна">${countryFlag(r.country)}</td>
+
+              <td data-label="Добавлен">
+                ${r.saved_at?.replace("T", " ").slice(0, 19) || "-"}
+              </td>
+
+              <td data-label="Действие">
+                <button class="action delete" onclick="unsave(${r.uid})">
+                  Удалить
+                </button>
+              </td>
+            `;
             tbody.appendChild(tr);
           });
         } catch (e) {
-          anim.destroy();
-          console.log(e);
+          console.error(e);
           loader.textContent = "Ошибка загрузки";
         }
       }
 
-      async function unmark(id) {
-        if (!confirm("Вернуть этот ID в общий список?")) return;
-        const res = await fetch(`${API}/unmark/${id}`, {
+      async function unsave(id) {
+        if (!confirm("Удалить из сохранённых?")) return;
+
+        const res = await fetch(`${API}/usernames/save/${id}`, {
           method: "POST",
           headers: { "x-session": token },
         });
-        const data = await res.json();
-        if (data.ok) load();
-        else alert(data.error || "Ошибка");
-      }
 
-      async function del(id) {
-        if (!confirm("Удалить запись окончательно?")) return;
-        const res = await fetch(`${API}/delete/${id}`, {
-          method: "DELETE",
-          headers: { "x-session": token },
-        });
         const data = await res.json();
         if (data.ok) load();
-        else alert(data.error || "Ошибка");
+        else alert("Ошибка");
       }
 
       function back() {
-        location.href = "main.html";
+        location.href = "usernames.html";
       }
 
       async function checkAdmin() {
-        const token = localStorage.getItem("session");
         if (!token) return;
 
         try {
           const res = await fetch(`${API}/me`, {
             headers: { "x-session": token },
           });
-          const data = await res.json()
+          const data = await res.json();
 
           if (!data.cleared) {
             document
@@ -211,11 +212,11 @@
 
           window.isCleared = data.cleared;
         } catch (e) {
-          console.error("Ошибка проверки админа:", e);
+          console.error("Admin check error:", e);
         }
       }
-      
-      checkAdmin()
+
+      checkAdmin();
       load();
     </script>
   </body>
