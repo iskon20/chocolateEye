@@ -1,5 +1,5 @@
-// const API = "https://chocolateeyeserver-production.up.railway.app/api";
-const API = "http://127.0.0.1:3000/api";
+const API = "https://chocolateeyeserver-production.up.railway.app/api";
+// const API = "http://127.0.0.1:3000/api";
 
 let page = 1,
   pages = 1,
