@@ -135,7 +135,7 @@ async function loadTargets(cleared) {
     data.data.forEach((t) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-    <td class="copyable" data-label="ID">${t.id
+    <td class="copyable" style="white-space: nowrap;" data-label="ID">${t.id
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
 
@@ -148,10 +148,7 @@ async function loadTargets(cleared) {
     <td class="copyable  ${
       window.isCleared ? "hidden" : ""
     }" data-label="Телефон">${t.phone ? `+${t.phone}` : ""}</td>
-    <td class="${
-      window.isCleared ? "hidden" : ""
-    }" data-label="Продажа">${t.on_sale ? "✅" : "❌"}</td>
-    <td data-label="Страна">${countryFlag(t.country)}</td>
+    <td style="text-align: center;" data-label="Страна">${countryFlag(t.country)}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td data-label="Действие">
       <button class="mark-btn" onclick="mark(${t.id}, this)">Забрать</button>

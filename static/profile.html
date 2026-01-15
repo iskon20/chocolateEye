@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css" />
     <style>
       button.action {
+        white-space: nowrap;
         margin: 0 3px;
         padding: 4px 8px;
 
@@ -42,7 +43,6 @@
           <th>Чат</th>
           <th class="status_hidden hidden">Статус</th>
           <th class="status_hidden hidden">Телефон</th>
-          <th class="status_hidden hidden">Продажа</th>
           <th>Страна</th>
           <th>Добавлен</th>
           <th>Действие</th>
@@ -130,7 +130,7 @@
           data.forEach((r) => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-            <td class="copyable" data-label="ID">${r.id
+            <td class="copyable" style="white-space: nowrap;" data-label="ID">${r.id
               .toString()
               .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
           <td class="copyable" data-label="Имя">${r.name || "-"}</td>
@@ -141,15 +141,12 @@
           <td class="copyable ${
             window.isCleared ? "hidden" : ""
           }" data-label="Телефон">${r.phone ? `+${r.phone}` : "-"}</td>
-          <td class="${
-            window.isCleared ? "hidden" : ""
-          }" data-label="Продажа">${r.on_sale ? "✅" : "❌"}</td>
           <td data-label="Страна">${countryFlag(r.country)}</td>
           <td data-label="Добавлен">${
             r.marked_at?.replace("T", " ").slice(0, 19) || "-"
           }</td>
           <td data-label="Действия">
-            <div>
+            <div class="card-btn-container">
               <button class="action return" onclick="unmark(${
                 r.id
               })">Вернуть</button>

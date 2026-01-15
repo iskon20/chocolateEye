@@ -78,6 +78,29 @@ async function loadSaved() {
   savedSet = new Set(arr.map((x) => x.uid));
 }
 
+function pluralRu(n, one, few, many) {
+  if (n % 10 === 1 && n % 100 !== 11) return one;
+  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) return few;
+  return many;
+}
+
+function formatNextUpdate(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+
+  const hWord = pluralRu(h, "час", "часа", "часов");
+  const mWord = pluralRu(m, "минуту", "минуты", "минут");
+
+  if (h === 0) {
+    return `через ${m} ${mWord}`;
+  }
+
+  if (m === 0) {
+    return `через ${h} ${hWord}`;
+  }
+
+  return `через ${h} ${hWord}, ${m} ${mWord}`;
+}
+
 async function loadTargets(cleared) {
   const token = localStorage.getItem("session");
 
@@ -123,11 +146,18 @@ async function loadTargets(cleared) {
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
+    const allDbformatted = count.allDbTotal
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
     document.getElementById(
       "total-count"
-    ).innerText = `На данный момент, в базе: ${formatted} записей.\nКешировано: ${data.total
+    ).innerText = `На данный момент, в базе: ${formatted} записей с юзернеймами.\nОбщее кол-во записей: ${allDbformatted}.\nКешировано: ${data.total
       .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} записей.`;
+      .replace(
+        /\B(?=(\d{3})+(?!\d))/g,
+        " "
+      )} записей.\nСледующее кеширование через: ${formatNextUpdate(count.nextUpd)}.`;
 
     if (!data.data || data.data.length === 0) {
       const tr = document.createElement("tr");
@@ -144,7 +174,9 @@ async function loadTargets(cleared) {
       const isSaved = savedSet.has(t.uid);
       const tr = document.createElement("tr");
       tr.innerHTML = `
-    <td class="copyable" data-label="Юзер">${t.username || ""}</td>
+    <td style="white-space: nowrap;" class="copyable" data-label="Юзер">${
+      t.username || ""
+    }</td>
     <td data-label="Ссылка на ТГ">
       ${
         t.username
@@ -158,7 +190,7 @@ async function loadTargets(cleared) {
       }
     </td>
     <td class="copyable" data-label="Чат">${t.found_from || ""}</td>
-    <td class="copyable" data-label="ID">${t.uid
+    <td class="copyable" style="white-space: nowrap;" data-label="ID">${t.uid
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
 
@@ -168,14 +200,16 @@ async function loadTargets(cleared) {
     <td class="copyable  ${
       window.isCleared ? "hidden" : ""
     }" data-label="Телефон">${t.number ? `+${t.number}` : ""}</td>
-    <td data-label="Страна">${countryFlag(t.country)}</td>
+    <td style="text-align: center;" data-label="Страна">${countryFlag(
+      t.country
+    )}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td data-label="Действие">
-    <div>
-  <button class="save-btn" onclick="toggleSave(${t.uid}, this)">
+    <div class="card-btn-container">
+  <button class="save-btn btn-usernames" onclick="toggleSave(${t.uid}, this)">
           ${isSaved ? "❌ Удалить лайк" : "⭐ Сохранить"}
         </button>
-  <button class="mark-btn" onclick="hide(${t.uid}, this)">
+  <button class="mark-btn btn-usernames" onclick="hide(${t.uid}, this)">
     Отбраковать
   </button>
   </div>
@@ -248,6 +282,16 @@ async function hide(uid, btn) {
   // 🔹 UI toggle
   tr.classList.toggle("hidden-row", !newState);
   btn.textContent = newState ? "Отбраковать" : "Вернуть";
+
+  const tbody = tr.closest("tbody");
+
+  const visibleRows = [...tbody.querySelectorAll("tr")].filter(
+    (row) => !row.classList.contains("hidden-row")
+  );
+
+  if (visibleRows.length === 0) {
+    loadTargets();
+  }
 }
 
 async function checkAdmin() {
