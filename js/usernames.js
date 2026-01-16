@@ -91,14 +91,14 @@ function formatNextUpdate(hhmm) {
   const mWord = pluralRu(m, "минуту", "минуты", "минут");
 
   if (h === 0) {
-    return `через ${m} ${mWord}`;
+    return `${m} ${mWord}`;
   }
 
   if (m === 0) {
-    return `через ${h} ${hWord}`;
+    return `${h} ${hWord}`;
   }
 
-  return `через ${h} ${hWord}, ${m} ${mWord}`;
+  return `${h} ${hWord}, ${m} ${mWord}`;
 }
 
 async function loadTargets(cleared) {
@@ -337,3 +337,4 @@ document.getElementById("next").onclick = () => {
 
 loadTargets();
 checkAdmin();
+
