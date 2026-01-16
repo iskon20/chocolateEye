@@ -7,7 +7,6 @@
     <title>Вход | Chocolate Eye</title>
     <link rel="stylesheet" href="static/style.css" />
 
-
     <style>
       body {
         display: flex;
@@ -102,7 +101,7 @@
       </div>
 
       <a
-        href="https://t.me/chocolateCodes_bot"
+        href="https://t.me/chocolateCodes_bot?start"
         class="btn"
         target="_blank"
         >Войти через Telegram</a
@@ -134,11 +133,18 @@
         overlay.classList.add("hidden");
         loader.stop();
       }
-
+      
       // Проверка токена при загрузке страницы
       async function checkExistingSession() {
         const token = localStorage.getItem("session");
-        if (!token) await handleTempToken();
+        
+        if (!token) {
+          await handleTempToken();
+          console.log(2);
+          return
+        }
+
+        showLoader();
         
         try {
           const res = await fetch(`${API}/me`, {
@@ -146,7 +152,7 @@
           });
 
           if (!res.ok) await handleTempToken();
-
+          
           const data = await res.json();
           if (data && data.email) {
             // токен валиден
@@ -155,6 +161,7 @@
           }
         } catch (e) {
           console.warn("Ошибка проверки токена:", e);
+          hideLoader();
         }
         await handleTempToken();
       }
@@ -163,9 +170,7 @@
         const params = new URLSearchParams(window.location.search);
         const temp = params.get("code");
         if (!temp) return;
-
         showLoader();
-
         try {
           const res = await fetch(`${API}/confirm-temp-token`, {
             method: "POST",
