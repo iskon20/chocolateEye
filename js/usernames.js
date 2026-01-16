@@ -4,7 +4,7 @@ const API = "https://chocolateeyeserver-production.up.railway.app/api";
 let savedSet = new Set();
 let page = 1,
   pages = 1,
-  limit = 100;
+  limit = 50;
 
 document.getElementById("unlog").addEventListener("click", () => {
   localStorage.removeItem("session");
@@ -322,19 +322,6 @@ document.getElementById("refresh").onclick = () => {
   checkAdmin();
 };
 
-document.getElementById("prev").onclick = () => {
-  if (page > 1) {
-    page--;
-    loadTargets();
-  }
-};
-document.getElementById("next").onclick = () => {
-  if (page < pages) {
-    page++;
-    loadTargets();
-  }
-};
 
 loadTargets();
 checkAdmin();
-
