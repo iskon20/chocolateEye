@@ -40,6 +40,7 @@
         <tr>
           <th>ID</th>
           <th>Имя</th>
+          <th>Юзер</th>
           <th>Чат</th>
           <th class="status_hidden hidden">Статус</th>
           <th class="status_hidden hidden">Телефон</th>
@@ -134,6 +135,7 @@
               .toString()
               .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
           <td class="copyable" data-label="Имя">${r.name || "-"}</td>
+          <td class="copyable" data-label="Юзер">${r.username || "-"}</td>
           <td class="copyable" data-label="Чат">${r.chat || "-"}</td>
           <td class="${window.isCleared ? "hidden" : ""}" data-label="Статус">${
               r.status || "-"
