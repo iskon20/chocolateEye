@@ -1,4 +1,4 @@
-const API = "https://chocolateeyeserver-production.up.railway.app/api";
+const API = "https://api.iskonentertainment.it.com/api";
 // const API = "http://127.0.0.1:3000/api";
 
 let savedSet = new Set();
