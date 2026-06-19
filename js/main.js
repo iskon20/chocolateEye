@@ -1,6 +1,7 @@
-const API = "https://api.iskonentertainment.it.com/api";
+// const API = "https://api.iskonentertainment.it.com/api";
 // const API = "http://127.0.0.1:3000/api";
 
+const API = window.API_URL;
 let page = 1,
   pages = 1,
   limit = 100;
