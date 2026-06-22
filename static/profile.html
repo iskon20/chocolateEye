@@ -46,7 +46,8 @@
           <th class="status_hidden hidden">Телефон</th>
           <th>Страна</th>
           <th>Добавлен</th>
-          <th>Действие</th>
+          <th>Кто спарсил</th>
+          <th>Действия</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -148,6 +149,9 @@
           <td data-label="Страна">${countryFlag(r.country)}</td>
           <td data-label="Добавлен">${
             r.marked_at?.replace("T", " ").slice(0, 19) || "-"
+          }</td>
+          <td data-label="Кто спарсил">${
+            r.parser_user_name
           }</td>
           <td data-label="Действия">
             <div class="card-btn-container">

@@ -125,7 +125,7 @@ async function loadTargets(cleared) {
     if (!data.data || data.data.length === 0) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-    <td colspan="9" style="text-align:center; justify-content:center; padding:20px; color:#888;">
+    <td colspan="10" style="text-align:center; justify-content:center; padding:20px; color:#888;">
       Ничего не найдено
     </td>
   `;
@@ -151,6 +151,7 @@ async function loadTargets(cleared) {
     }" data-label="Телефон">${t.phone ? `+${t.phone}` : ""}</td>
     <td style="text-align: center;" data-label="Страна">${countryFlag(t.country)}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
+    <td style="text-align: center;" data-label="Спарсил">${t.parser_user_name}</td>
     <td data-label="Действие">
       <button class="mark-btn" onclick="mark(${t.id}, this)">Забрать</button>
     </td>
