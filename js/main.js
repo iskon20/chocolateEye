@@ -1,6 +1,6 @@
 // const API = "https://api.iskonentertainment.it.com/api";
 // const API = "http://127.0.0.1:3000/api";
-
+let currentUser = {};
 const API = window.API_URL;
 let page = 1,
   pages = 1,
@@ -113,14 +113,12 @@ async function loadTargets(cleared) {
 
     if (data.redirect) window.location.href = data.redirect;
 
-
     const formatted = data.total
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-    document.getElementById(
-      "total-count"
-    ).innerText = `На данный момент, в базе: ${formatted} записей.`;
+    document.getElementById("total-count").innerText =
+      `На данный момент, в базе: ${formatted} записей.`;
 
     if (!data.data || data.data.length === 0) {
       const tr = document.createElement("tr");
@@ -135,6 +133,19 @@ async function loadTargets(cleared) {
 
     data.data.forEach((t) => {
       const tr = document.createElement("tr");
+      const isOwn = (currentUser.session_ids || []).includes(t.session_id);
+      const canMark =
+        !t.session_id ||
+        isOwn ||
+        (currentUser.can_mark_others && t.added_minutes_ago >= 5);
+
+      const minsLeft =
+        t.session_id &&
+        !isOwn &&
+        currentUser.can_mark_others &&
+        t.added_minutes_ago < 5
+          ? 5 - t.added_minutes_ago
+          : null;
       tr.innerHTML = `
     <td class="copyable" style="white-space: nowrap;" data-label="ID">${t.id
       .toString()
@@ -144,17 +155,18 @@ async function loadTargets(cleared) {
     <td class="copyable" data-label="Юзер">${t.username || ""}</td>
     <td class="copyable" data-label="Чат">${t.chat || ""}</td>
     <td class=" ${window.isCleared ? "hidden" : ""}" data-label="Статус">${
-        t.status || ""
-      }</td>
+      t.status || ""
+    }</td>
     <td class="copyable  ${
       window.isCleared ? "hidden" : ""
     }" data-label="Телефон">${t.phone ? `+${t.phone}` : ""}</td>
     <td style="text-align: center;" data-label="Страна">${countryFlag(t.country)}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td style="text-align: center;" data-label="Спарсил">${t.parser_user_name}</td>
-    <td data-label="Действие">
-      <button class="mark-btn" onclick="mark(${t.id}, this)">Забрать</button>
-    </td>
+     <td data-label="Действие">
+    <button class="mark-btn" onclick="mark(${t.id}, this)" ${canMark ? "" : "disabled"}>${minsLeft !== null ? `${minsLeft} мин.` : canMark ? "Забрать" : "✕"}</button>
+  </td>
+  
   `;
       tbody.appendChild(tr);
     });
@@ -177,6 +189,7 @@ async function checkAdmin() {
       headers: { "x-session": token },
     });
     const data = await res.json();
+    currentUser = data;
 
     if (data.is_admin) {
       document.getElementById("adminBtn").classList.remove("hidden");

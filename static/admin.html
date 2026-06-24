@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
@@ -30,7 +30,7 @@
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,0.6);
+        background: rgba(0, 0, 0, 0.6);
         z-index: 100;
         align-items: center;
         justify-content: center;
@@ -148,7 +148,7 @@
   <body>
     <h1>⚙️ Админ панель</h1>
 
-    <button style="width: max-content" onclick="location.href = 'main.html';">
+    <button style="width: max-content" onclick="location.href = 'main.html'">
       Назад
     </button>
 
@@ -161,6 +161,7 @@
             <th>Email</th>
             <th>Имя</th>
             <th>Session IDs</th>
+            <th>Чужие</th>
             <th>Создан</th>
             <th></th>
           </tr>
@@ -223,21 +224,48 @@
         data.forEach((u) => {
           const sessions = (u.session_ids || []).join(", ") || "—";
           const tr = document.createElement("tr");
+
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "✏️";
+          editBtn.dataset.userId = u.id;
+          editBtn.dataset.userName = u.user_name || "";
+          editBtn.dataset.sessionIds = JSON.stringify(u.session_ids || []);
+          editBtn.addEventListener("click", () => {
+            openModal(
+              parseInt(editBtn.dataset.userId),
+              editBtn.dataset.userName,
+              JSON.parse(editBtn.dataset.sessionIds),
+            );
+          });
+
           tr.innerHTML = `
             <td class="copyable" data-label="ID">${u.id}</td>
             <td class="copyable" data-label="Email">${u.email}</td>
             <td data-label="Имя">${u.user_name || "—"}</td>
             <td data-label="Session IDs" style="font-size:12px;word-break:break-all">${sessions}</td>
+            <td data-label="Чужие">
+              <input type="checkbox" ${u.can_mark_others ? "checked" : ""}
+                onchange="toggleCanMark(${u.id}, this.checked)">
+            </td>
             <td data-label="Создан">${u.created_at}</td>
             <td data-label="Действие">
-              <div>
-                <button onclick="openModal(${u.id}, '${u.user_name || ""}', ${JSON.stringify(u.session_ids || [])})">✏️</button>
+              <div id="actions-${u.id}">
                 <button onclick="delUser(${u.id})">🗑</button>
                 <button onclick="location.href='marks.html?user=${u.id}'">📝 Отмеченные</button>
               </div>
             </td>
           `;
+
+          tr.querySelector(`#actions-${u.id}`).prepend(editBtn);
           tbody.appendChild(tr);
+        });
+      }
+
+      async function toggleCanMark(id, enabled) {
+        await fetch(`${API}/admin/users/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "x-session": token },
+          body: JSON.stringify({ can_mark_others: enabled }),
         });
       }
 
@@ -248,7 +276,7 @@
         const list = document.getElementById("sessionList");
         list.innerHTML = "";
         (sessionIds.length ? sessionIds : [""]).forEach((s) =>
-          addSessionField(s)
+          addSessionField(s),
         );
 
         document.getElementById("editModal").classList.add("open");
@@ -272,7 +300,9 @@
 
       async function saveUser() {
         const user_name = document.getElementById("editUserName").value.trim();
-        const inputs = document.querySelectorAll("#sessionList .session-item input");
+        const inputs = document.querySelectorAll(
+          "#sessionList .session-item input",
+        );
         const session_ids = Array.from(inputs)
           .map((i) => i.value.trim())
           .filter(Boolean);
