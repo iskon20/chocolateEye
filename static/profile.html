@@ -328,10 +328,12 @@
           : [...currentMarkers, marker];
 
         cellEl.innerHTML = `
-    ${markerBadges(newMarkers)}
+  ${markerBadges(newMarkers)}
+  <div class="marker-dropdown-anchor">
     <button class="marker-toggle-btn" onclick="this.nextElementSibling.classList.toggle('show')">⋮</button>
     ${markerDropdown(id, newMarkers)}
-  `;
+  </div>
+`;
 
         applyCardStyle(tr, newMarkers);
 
@@ -377,13 +379,15 @@
         <td data-label="Маркеры">
           <div class="markers-cell">
             ${markerBadges(r.markers)}
-            <button
-              class="marker-toggle-btn"
-              onclick="this.nextElementSibling.classList.toggle('show')"
-            >
-              ⋮
-            </button>
-            ${markerDropdown(r.id, r.markers)}
+            <div class="marker-dropdown-anchor">
+              <button
+                class="marker-toggle-btn"
+                onclick="this.nextElementSibling.classList.toggle('show')"
+              >
+                ⋮
+              </button>
+              ${markerDropdown(r.id, r.markers)}
+            </div>
           </div>
         </td>`;
           applyCardStyle(tr, r.markers);

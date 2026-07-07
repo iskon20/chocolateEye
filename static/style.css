@@ -62,7 +62,7 @@
   position: absolute;
 
   top: 100%;
-  right: 70%;
+  right: -40%;
 
   background: rgb(57, 57, 57);
   border-radius: 6px;
@@ -222,16 +222,19 @@ body {
 }
 
 .markers-cell .marker-toggle-btn {
-  order: -1;
-
   padding: 10px 15px;
 }
 
 .markers-cell {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
+}
+
+.marker-dropdown-anchor {
+  order: -1;
+  position: relative;
+  display: inline-flex;
 }
 
 .loader {
@@ -429,7 +432,7 @@ td {
     display: none;
   }
 
-  .markers-cell .marker-toggle-btn {
+  .markers-cell .marker-dropdown-anchor {
     order: 1;
   }
   .card-btn-container {
