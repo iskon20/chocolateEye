@@ -66,6 +66,43 @@ function countryFlag(code) {
   return `<img src="${flagPath}" alt="${code.toUpperCase()}" width="24" height="16" style="vertical-align:middle;">`;
 }
 
+function showModal(message, buttons) {
+  const overlay = document.getElementById("modal-overlay");
+  const msgEl = document.getElementById("modal-message");
+  const btnContainer = document.getElementById("modal-buttons");
+
+  msgEl.textContent = message;
+  btnContainer.innerHTML = "";
+
+  buttons.forEach((b) => {
+    const btn = document.createElement("button");
+    btn.textContent = b.label;
+    btn.className = b.className || "modal-btn-ok";
+    btn.onclick = () => {
+      overlay.classList.add("hidden");
+      b.onClick?.();
+    };
+    btnContainer.appendChild(btn);
+  });
+
+  overlay.classList.remove("hidden");
+}
+
+function showAlert(message) {
+  showModal(message, [{ label: "Ок", className: "modal-btn-ok" }]);
+}
+
+function showConfirm(message, onConfirm) {
+  showModal(message, [
+    { label: "Отмена", className: "modal-btn-cancel" },
+    {
+      label: "Подтвердить",
+      className: "modal-btn-danger",
+      onClick: onConfirm,
+    },
+  ]);
+}
+
 async function loadTargets(cleared) {
   const sort = document.getElementById("sort").value;
   const country = document.getElementById("country").value;
@@ -151,7 +188,7 @@ async function loadTargets(cleared) {
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
 
-    <td class="copyable" data-label="Имя">${t.name || ""}</td>
+    <td class="copyable" data-label="Имя">${(t.name || "").slice(0, 32)}</td>
     <td class="copyable" data-label="Юзер">${t.username || ""}</td>
     <td class="copyable" data-label="Чат">${t.chat || ""}</td>
     <td class=" ${window.isCleared ? "hidden" : ""}" data-label="Статус">${
@@ -163,8 +200,11 @@ async function loadTargets(cleared) {
     <td style="text-align: center;" data-label="Страна">${countryFlag(t.country)}</td>
     <td data-label="Добавлен">${daysAgoLabel(t.added_at)}</td>
     <td style="text-align: center;" data-label="Спарсил">${t.parser_user_name}</td>
-     <td data-label="Действие">
+     <td class="action_btns" data-label="Действия">
+    <div class="card-btn-container-main">
     <button class="mark-btn" onclick="mark(${t.id}, this)" ${canMark ? "" : "disabled"}>${minsLeft !== null ? `${minsLeft} мин.` : canMark ? "Забрать" : "✕"}</button>
+    <button class="delete-btn" onclick="deleteTarget(${t.id}, this)" ${canMark ? "" : "disabled"}>${minsLeft !== null ? `${minsLeft} мин.` : canMark ? "Удалить" : "✕"}</button>
+    </div>
   </td>
   
   `;
@@ -217,6 +257,24 @@ async function mark(id, btn) {
   const data = await res.json();
   if (data.ok) btn.closest("tr").remove();
   else alert(data.error || "Ошибка");
+}
+
+function deleteTarget(id, btn) {
+  showConfirm("Удалить эту запись?", async () => {
+    const token = localStorage.getItem("session");
+    btn.disabled = true;
+    const res = await fetch(`${API}/delete/${id}`, {
+      method: "POST",
+      headers: { "x-session": token },
+    });
+    const data = await res.json();
+    if (data.ok) {
+      btn.closest("tr").remove();
+    } else {
+      showAlert(data.error || "Ошибка");
+      btn.disabled = false;
+    }
+  });
 }
 
 document.getElementById("refresh").onclick = () => {

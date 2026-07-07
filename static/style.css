@@ -9,6 +9,68 @@
   text-align: center;
 }
 
+.sort-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.sort-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: rgb(57, 57, 57);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  padding: 4px;
+  min-width: 160px;
+}
+
+.sort-dropdown.show {
+  display: block;
+}
+
+.sort-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.sort-option:hover {
+  background: #7b7b7b;
+}
+
+.sort-option.active {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.marker-dropdown {
+  display: none;
+  position: absolute;
+
+  top: 100%;
+  right: 70%;
+
+  background: rgb(57, 57, 57);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  padding: 4px;
+}
+
 .hidden-row {
   opacity: 0.45;
   filter: grayscale(1);
@@ -16,6 +78,13 @@
 
 .userSelect {
   user-select: none;
+}
+
+.card-btn-container-main {
+  /* flex-direction: column; */
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 }
 
 .card {
@@ -31,9 +100,22 @@
   width: 40%;
 }
 
+.sort-bar {
+  align-items: center;
+  justify-self: start;
+  flex-direction: column;
+  display: flex;
+  gap: 15px;
+
+  p {
+    font-size: 1.2rem;
+  }
+}
+
 body {
   display: flex;
   flex-direction: column;
+  align-items: center;
 
   gap: 25px;
 
@@ -97,7 +179,9 @@ body {
   background: rgba(0, 136, 204, 0.12);
   color: #0088cc;
   border: 1px solid rgba(0, 136, 204, 0.25);
-  transition: transform 0.06s ease, background 0.15s ease,
+  transition:
+    transform 0.06s ease,
+    background 0.15s ease,
     border-color 0.15s ease;
 }
 
@@ -137,6 +221,19 @@ body {
   opacity: 1;
 }
 
+.markers-cell .marker-toggle-btn {
+  order: -1;
+
+  padding: 10px 15px;
+}
+
+.markers-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .loader {
   text-align: center;
   padding: 20px;
@@ -162,8 +259,77 @@ body {
   font-weight: 600;
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay.hidden {
+  display: none;
+}
+.modal-box {
+  background: #2c2c2c;
+  border-radius: 10px;
+  padding: 20px 24px;
+  max-width: 320px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: modalIn 0.15s ease-out;
+}
+@keyframes modalIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.modal-box p {
+  margin: 0 0 16px;
+  font-size: 15px;
+  color: #ffffff;
+}
+.modal-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.modal-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.modal-btn-ok {
+  background: #4c8bf5;
+  color: white;
+}
+.modal-btn-cancel {
+  background: #000000;
+}
+.modal-btn-danger {
+  background: #ff4d4d;
+  color: white;
+}
 .mark-btn {
   background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.delete-btn {
+  background: #f15757;
   color: white;
   border: none;
   border-radius: 5px;
@@ -186,6 +352,7 @@ body {
 
 .card-btn-container {
   max-width: min-content;
+  /* flex-direction: column; */
   display: flex;
   gap: 5px;
   align-items: center;
@@ -247,7 +414,6 @@ td {
   white-space: normal;
 }
 
-
 @media screen and (max-width: 1300px) {
   .card-btn-container {
     flex-wrap: wrap;
@@ -255,10 +421,17 @@ td {
 }
 
 @media screen and (max-width: 1024px) {
+  .responsive-table tr.has-markers td {
+    padding-left: var(--marker-total-width);
+  }
+
   .responsive-table thead {
     display: none;
   }
-  
+
+  .markers-cell .marker-toggle-btn {
+    order: 1;
+  }
   .card-btn-container {
     flex-wrap: nowrap;
   }
@@ -266,14 +439,14 @@ td {
   .logo {
     width: 40%;
   }
-  
+
   button,
   input,
   select,
   label {
     padding: 12px 20px !important;
   }
-  
+
   .responsive-table tr {
     display: block;
     margin-bottom: 10px;
@@ -281,7 +454,7 @@ td {
     border-radius: 6px;
     padding: 6px;
   }
-  
+
   .responsive-table td {
     display: flex;
     justify-content: space-between;
@@ -289,20 +462,20 @@ td {
     border-bottom: 1px solid #222;
     padding: 6px 10px;
   }
-  
+
   .responsive-table td::before {
     content: attr(data-label);
     font-weight: 600;
     color: #555;
   }
-  
+
   .responsive-table td:last-child {
     border-bottom: none;
   }
 }
 
 @media screen and (max-width: 465px) {
-.card-btn-container {
+  .card-btn-container {
     flex-wrap: wrap;
   }
 }

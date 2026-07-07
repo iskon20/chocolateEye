@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
@@ -7,11 +7,47 @@
     <title>Мои отметки | Chocolate Eye</title>
     <link rel="stylesheet" href="style.css" />
     <style>
+      .marker-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 3px;
+      }
+
+      .marker-dropdown.show {
+        display: block;
+      }
+      .marker-option {
+        padding: 6px 10px;
+        cursor: pointer;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+      .marker-option:hover {
+        background: #7b7b7b;
+      }
+      .marker-option.active {
+        font-weight: bold;
+        text-decoration: underline;
+      }
+
+      .marker-option.active::after {
+        content: " ✓";
+      }
+
+      .marker-toggle-btn {
+        border: none;
+        background: #353535;
+        border-radius: 4px;
+        cursor: pointer;
+        padding: 2px 6px;
+      }
+
       button.action {
         white-space: nowrap;
         margin: 0 3px;
         padding: 4px 8px;
-
         padding: 1vw 2vw;
         border-radius: 6px;
         cursor: pointer;
@@ -20,19 +56,42 @@
       }
 
       button.return {
-        background: #ffd966;
+        color: white;
+        background: #4caf50;
       }
       button.delete {
-        background: #ff4d4d;
+        background: #f15757;
         color: white;
       }
     </style>
   </head>
+
   <body>
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="modal-box">
+        <p id="modal-message"></p>
+        <div class="modal-buttons" id="modal-buttons"></div>
+      </div>
+    </div>
+
     <div class="header">
       <img class="logo" width="20%" src="../imgs/logo.png" alt="" />
       <h2>Мои отмеченные ID</h2>
       <button onclick="back()">Назад</button>
+    </div>
+
+    <div class="sort-bar">
+      <p>Сортировать по маркеру:</p>
+
+      <div class="sort-dropdown-wrapper">
+        <button
+          class="sort-dropdown-btn"
+          onclick="this.nextElementSibling.classList.toggle('show')"
+        >
+          <span id="sort-current-label">Без сортировки</span>▾
+        </button>
+        <div class="sort-dropdown" id="sort-dropdown"></div>
+      </div>
     </div>
 
     <table id="list" class="responsive-table">
@@ -48,6 +107,7 @@
           <th>Добавлен</th>
           <th>Кто спарсил</th>
           <th>Действия</th>
+          <th>Маркеры</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -60,11 +120,51 @@
       // const API = "https://api.iskonentertainment.it.com/api";
       // const API = "http://127.0.0.1:3000/api";
       const API = window.API_URL;
+      const token = localStorage.getItem("session");
+      let MARKERS_CACHE = null;
+      let ALL_DATA = [];
+
+      // ===== Модальное окно =====
+      function showModal(message, buttons) {
+        const overlay = document.getElementById("modal-overlay");
+        const msgEl = document.getElementById("modal-message");
+        const btnContainer = document.getElementById("modal-buttons");
+
+        msgEl.textContent = message;
+        btnContainer.innerHTML = "";
+
+        buttons.forEach((b) => {
+          const btn = document.createElement("button");
+          btn.textContent = b.label;
+          btn.className = b.className || "modal-btn-ok";
+          btn.onclick = () => {
+            overlay.classList.add("hidden");
+            b.onClick?.();
+          };
+          btnContainer.appendChild(btn);
+        });
+
+        overlay.classList.remove("hidden");
+      }
+
+      function showAlert(message) {
+        showModal(message, [{ label: "Ок", className: "modal-btn-ok" }]);
+      }
+
+      function showConfirm(message, onConfirm) {
+        showModal(message, [
+          { label: "Отмена", className: "modal-btn-cancel" },
+          {
+            label: "Подтвердить",
+            className: "modal-btn-danger",
+            onClick: onConfirm,
+          },
+        ]);
+      }
 
       function countryFlag(code) {
         if (!code) return "";
         code = code.trim().toLowerCase();
-
         const flagPath = `../imgs/flags/${code}.png`;
         return `<img src="${flagPath}" alt="${code.toUpperCase()}" width="24" height="16" style="vertical-align:middle;">`;
       }
@@ -82,20 +182,248 @@
         try {
           await navigator.clipboard.writeText(text);
           el.classList.add("copied");
-
           setTimeout(() => el.classList.remove("copied"), 1000);
         } catch (err) {
           console.warn("Ошибка копирования:", err);
         }
       });
 
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".markers-cell")) {
+          document
+            .querySelectorAll(".marker-dropdown.show")
+            .forEach((d) => d.classList.remove("show"));
+        }
+        if (!e.target.closest(".sort-dropdown-wrapper")) {
+          document
+            .querySelectorAll(".sort-dropdown.show")
+            .forEach((d) => d.classList.remove("show"));
+        }
+      });
+
       const loader = document.createElement("div");
-      const token = localStorage.getItem("session");
       loader.id = "loader";
       loader.classList.add("loader");
       loader.style.width = "120px";
       loader.style.margin = "30px auto";
 
+      // ===== Маркеры =====
+      let currentSortMarker = "";
+
+      function fillSortOptions() {
+        const dropdown = document.getElementById("sort-dropdown");
+
+        const noneOption = `
+    <div class="sort-option ${currentSortMarker === "" ? "active" : ""}"
+         onclick="selectSortMarker('', 'Без сортировки')">
+      Без сортировки
+    </div>
+  `;
+
+        const markerOptions = Object.entries(MARKERS_CACHE)
+          .map(([key, m]) => {
+            const active = currentSortMarker === key;
+            return `
+        <div class="sort-option ${active ? "active" : ""}"
+             onclick="selectSortMarker('${key}', '${m.label}')">
+          <span class="marker-dot" style="background:${m.color}"></span>
+          ${m.label}
+        </div>
+      `;
+          })
+          .join("");
+
+        dropdown.innerHTML = noneOption + markerOptions;
+      }
+
+      function selectSortMarker(key, label) {
+        currentSortMarker = key;
+        document.getElementById("sort-current-label").textContent = label;
+        document.getElementById("sort-dropdown").classList.remove("show");
+        fillSortOptions();
+        sortLocally();
+      }
+
+      function markerBadges(markers = []) {
+        if (!markers.length) return "";
+        return markers
+          .map(
+            (m) =>
+              `<span class="marker-dot" data-marker="${m}" style="background:${MARKERS_CACHE[m]?.color}" title="${MARKERS_CACHE[m]?.label}"></span>`,
+          )
+          .join("");
+      }
+
+      function applyCardStyle(tr, markers = []) {
+        const allTds = tr.querySelectorAll("td");
+        const firstTd = allTds[0];
+
+        if (!markers.length) {
+          tr.style.boxShadow = "";
+          tr.style.borderLeft = "";
+          tr.style.removeProperty("--marker-total-width");
+          tr.classList.remove("has-markers");
+          if (firstTd) firstTd.style.paddingLeft = "";
+          return;
+        }
+
+        tr.style.borderLeft = "none";
+
+        const barWidth = 5;
+
+        const shadows = markers
+          .map((m, i) => {
+            const color = MARKERS_CACHE[m]?.color || "#ccc";
+            const offset = barWidth * (i + 1);
+            return `inset ${offset}px 0 0 ${color}`;
+          })
+          .join(", ");
+
+        tr.style.boxShadow = shadows;
+        tr.classList.add("has-markers");
+
+        const totalWidth = barWidth * markers.length + 8;
+        tr.style.setProperty("--marker-total-width", `${totalWidth}px`);
+
+        if (firstTd) firstTd.style.paddingLeft = `${totalWidth}px`;
+      }
+      function markerDropdown(id, activeMarkers = []) {
+        const options = Object.entries(MARKERS_CACHE)
+          .map(([key, m]) => {
+            const active = activeMarkers.includes(key);
+            return `<div class="marker-option ${active ? "active" : ""}"
+                 onclick="toggleMarker(${id}, '${key}', ${active}, this.closest('.markers-cell'))">
+              <span class="marker-dot" style="background:${m.color}"></span>
+              ${m.label}
+            </div>`;
+          })
+          .join("");
+        return `<div class="marker-dropdown">${options}</div>`;
+      }
+
+      async function toggleMarker(id, marker, isActive, cellEl) {
+        const url = `${API}/targets/${id}/markers${isActive ? `/${marker}` : ""}`;
+        const res = await fetch(url, {
+          method: isActive ? "DELETE" : "POST",
+          headers: {
+            "x-session": token,
+            "Content-Type": "application/json",
+          },
+          body: isActive ? undefined : JSON.stringify({ marker }),
+        });
+        const data = await res.json();
+
+        if (!data.ok) {
+          showAlert(data.error || "Ошибка");
+          return;
+        }
+
+        const tr = cellEl.closest("tr");
+        const currentMarkers = [
+          ...cellEl.querySelectorAll(".marker-dot[data-marker]"),
+        ].map((d) => d.dataset.marker);
+
+        const newMarkers = isActive
+          ? currentMarkers.filter((m) => m !== marker)
+          : [...currentMarkers, marker];
+
+        cellEl.innerHTML = `
+    ${markerBadges(newMarkers)}
+    <button class="marker-toggle-btn" onclick="this.nextElementSibling.classList.toggle('show')">⋮</button>
+    ${markerDropdown(id, newMarkers)}
+  `;
+
+        applyCardStyle(tr, newMarkers);
+
+        const item = ALL_DATA.find((r) => r.id === id);
+        if (item) item.markers = newMarkers;
+      }
+
+      function renderRows(data) {
+        const tbody = document.querySelector("#list tbody");
+        tbody.innerHTML = "";
+
+        if (!data || data.length === 0) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+      <td colspan="10" style="text-align:center; justify-content:center; padding:20px; color:#888;">
+        Ничего не найдено
+      </td>
+    `;
+          tbody.appendChild(tr);
+          return;
+        }
+
+        data.forEach((r) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+      <td class="copyable" style="white-space: nowrap;" data-label="ID">${r.id
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
+      <td class="copyable" data-label="Имя">${r.name || "-"}</td>
+      <td class="copyable" data-label="Юзер">${r.username || "-"}</td>
+      <td class="copyable" data-label="Чат">${r.chat || "-"}</td>
+      <td class="${window.isCleared ? "hidden" : ""}" data-label="Статус">${r.status || "-"}</td>
+      <td class="copyable ${window.isCleared ? "hidden" : ""}" data-label="Телефон">${r.phone ? `+${r.phone}` : "-"}</td>
+      <td data-label="Страна">${countryFlag(r.country)}</td>
+      <td data-label="Добавлен">${r.marked_at?.replace("T", " ").slice(0, 19) || "-"}</td>
+      <td data-label="Кто спарсил">${r.parser_user_name || "-"}</td>
+      <td data-label="Действия">
+        <div class="card-btn-container">
+          <button class="action return" onclick="unmark(${r.id}, this)">Вернуть</button>
+          <button class="action delete" onclick="del(${r.id}, this)">Удалить</button>
+        </div>
+        </td>
+        <td data-label="Маркеры">
+          <div class="markers-cell">
+            ${markerBadges(r.markers)}
+            <button
+              class="marker-toggle-btn"
+              onclick="this.nextElementSibling.classList.toggle('show')"
+            >
+              ⋮
+            </button>
+            ${markerDropdown(r.id, r.markers)}
+          </div>
+        </td>`;
+          applyCardStyle(tr, r.markers);
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      function sortLocally() {
+        const tbody = document.querySelector("#list tbody");
+        tbody.innerHTML = "";
+        tbody.parentElement.after(loader);
+
+        const anim = lottie.loadAnimation({
+          container: loader,
+          renderer: "svg",
+          loop: true,
+          autoplay: true,
+          path: "../imgs/loader.json",
+        });
+
+        setTimeout(() => {
+          anim.destroy();
+          loader.remove();
+
+          if (!currentSortMarker) {
+            renderRows(ALL_DATA);
+            return;
+          }
+
+          const sorted = [...ALL_DATA].sort((a, b) => {
+            const aHas = (a.markers || []).includes(currentSortMarker) ? 1 : 0;
+            const bHas = (b.markers || []).includes(currentSortMarker) ? 1 : 0;
+            return bHas - aHas;
+          });
+
+          renderRows(sorted);
+        }, 300);
+      }
+      // ===== Загрузка списка =====
       async function load() {
         const tbody = document.querySelector("#list tbody");
         tbody.innerHTML = "";
@@ -109,62 +437,24 @@
           path: "../imgs/loader.json",
         });
 
+        await checkAdmin();
+
         try {
           const res = await fetch(`${API}/my-marks`, {
             headers: { "x-session": token },
           });
-          const data = await res.json();
+
+          const response = await res.json();
 
           anim.destroy();
           loader.remove();
 
-          if (data.redirect) window.location.href = data.redirect;
+          if (response.redirect) window.location.href = response.redirect;
 
-          if (!data || data.length === 0) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-    <td colspan="9" style="text-align:center; justify-content:center; padding:20px; color:#888;">
-      Ничего не найдено
-    </td>
-  `;
-            tbody.appendChild(tr);
-            return;
-          }
+          MARKERS_CACHE = response.markers;
+          ALL_DATA = response.data;
 
-          data.forEach((r) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-            <td class="copyable" style="white-space: nowrap;" data-label="ID">${r.id
-              .toString()
-              .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
-          <td class="copyable" data-label="Имя">${r.name || "-"}</td>
-          <td class="copyable" data-label="Юзер">${r.username || "-"}</td>
-          <td class="copyable" data-label="Чат">${r.chat || "-"}</td>
-          <td class="${window.isCleared ? "hidden" : ""}" data-label="Статус">${
-              r.status || "-"
-            }</td>
-          <td class="copyable ${
-            window.isCleared ? "hidden" : ""
-          }" data-label="Телефон">${r.phone ? `+${r.phone}` : "-"}</td>
-          <td data-label="Страна">${countryFlag(r.country)}</td>
-          <td data-label="Добавлен">${
-            r.marked_at?.replace("T", " ").slice(0, 19) || "-"
-          }</td>
-          <td data-label="Кто спарсил">${
-            r.parser_user_name
-          }</td>
-          <td data-label="Действия">
-            <div class="card-btn-container">
-              <button class="action return" onclick="unmark(${
-                r.id
-              })">Вернуть</button>
-                <button class="action delete" onclick="del(${
-                  r.id
-                })">Удалить</button>
-                  </div>
-          </td>`;
-            tbody.appendChild(tr);
-          });
+          sortLocally();
         } catch (e) {
           anim.destroy();
           console.log(e);
@@ -172,26 +462,40 @@
         }
       }
 
-      async function unmark(id) {
-        if (!confirm("Вернуть этот ID в общий список?")) return;
-        const res = await fetch(`${API}/unmark/${id}`, {
-          method: "POST",
-          headers: { "x-session": token },
+      function unmark(id, btn) {
+        showConfirm("Вернуть этот ID в общий список?", async () => {
+          btn.disabled = true;
+          const res = await fetch(`${API}/unmark/${id}`, {
+            method: "POST",
+            headers: { "x-session": token },
+          });
+          const data = await res.json();
+          if (data.ok) {
+            btn.closest("tr").remove();
+            ALL_DATA = ALL_DATA.filter((r) => r.id !== id);
+          } else {
+            showAlert(data.error || "Ошибка");
+            btn.disabled = false;
+          }
         });
-        const data = await res.json();
-        if (data.ok) load();
-        else alert(data.error || "Ошибка");
       }
 
-      async function del(id) {
-        if (!confirm("Удалить запись окончательно?")) return;
-        const res = await fetch(`${API}/delete/${id}`, {
-          method: "DELETE",
-          headers: { "x-session": token },
+      function del(id, btn) {
+        showConfirm("Удалить запись окончательно?", async () => {
+          btn.disabled = true;
+          const res = await fetch(`${API}/delete/${id}`, {
+            method: "DELETE",
+            headers: { "x-session": token },
+          });
+          const data = await res.json();
+          if (data.ok) {
+            btn.closest("tr").remove();
+            ALL_DATA = ALL_DATA.filter((r) => r.id !== id);
+          } else {
+            showAlert(data.error || "Ошибка");
+            btn.disabled = false;
+          }
         });
-        const data = await res.json();
-        if (data.ok) load();
-        else alert(data.error || "Ошибка");
       }
 
       function back() {
@@ -199,14 +503,12 @@
       }
 
       async function checkAdmin() {
-        const token = localStorage.getItem("session");
         if (!token) return;
-
         try {
           const res = await fetch(`${API}/me`, {
             headers: { "x-session": token },
           });
-          const data = await res.json()
+          const data = await res.json();
 
           if (!data.cleared) {
             document
@@ -219,9 +521,11 @@
           console.error("Ошибка проверки админа:", e);
         }
       }
-      
-      checkAdmin()
-      load();
+
+      (async () => {
+        await load();
+        await fillSortOptions();
+      })();
     </script>
   </body>
 </html>

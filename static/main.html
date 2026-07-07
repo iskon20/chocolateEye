@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
@@ -8,9 +8,18 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="unlog">logout</div>
-    <button class="usernames" onclick="location.href='usernames.html'">Юзеры</button>
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="modal-box">
+        <p id="modal-message"></p>
+        <div class="modal-buttons" id="modal-buttons"></div>
+      </div>
+    </div>
     
+    <div id="unlog">logout</div>
+    <button class="usernames" onclick="location.href = 'usernames.html'">
+      Юзеры
+    </button>
+
     <div class="toolbar">
       <img
         class="logo userSelect"
@@ -46,19 +55,23 @@
           <option value="tr">Турция</option>
         </select>
 
-        <label class="status_hidden hidden"><input type="checkbox" id="has_phone" /> Только с номером</label>
-        <label class="status_hidden hidden"><input type="checkbox" id="on_sale" /> Только на продаже</label>
+        <label class="status_hidden hidden"
+          ><input type="checkbox" id="has_phone" /> Только с номером</label
+        >
+        <label class="status_hidden hidden"
+          ><input type="checkbox" id="on_sale" /> Только на продаже</label
+        >
         <label class="status_hidden hidden"
           ><input type="checkbox" id="not_recently" /> Только не RECENTLY</label
         >
 
         <button id="refresh">🔄 Обновить</button>
-        <button onclick="location.href = 'profile.html';">Сохраненные</button>
+        <button onclick="location.href = 'profile.html'">Сохраненные</button>
 
         <button
           id="adminBtn"
           class="hidden"
-          onclick="location.href='admin.html'"
+          onclick="location.href = 'admin.html'"
         >
           ⚙️ Админ-панель
         </button>
@@ -81,7 +94,7 @@
           <th>Страна</th>
           <th>Добавлен</th>
           <th>Спарсил</th>
-          <th>Действие</th>
+          <th>Действия</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -94,7 +107,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-    
+
     <script src="../config.js"></script>
     <script src="../js/main.js"></script>
   </body>
