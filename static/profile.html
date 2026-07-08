@@ -74,6 +74,10 @@
       </div>
     </div>
 
+    <div id="overlay" class="hidden block">
+      <div id="MarkerLoader"></div>
+    </div>
+
     <div class="header">
       <img class="logo" width="20%" src="../imgs/logo.png" alt="" />
       <h2>Мои отмеченные ID</h2>
@@ -92,6 +96,10 @@
         </button>
         <div class="sort-dropdown" id="sort-dropdown"></div>
       </div>
+      <label>
+        <input type="checkbox" id="sort-offline-checkbox" onchange="load()" />
+        Сначала не в сети
+      </label>
     </div>
 
     <table id="list" class="responsive-table">
@@ -100,6 +108,7 @@
           <th>ID</th>
           <th>Имя</th>
           <th>Юзер</th>
+          <th>Ссылка на ТГ</th>
           <th>Чат</th>
           <th class="status_hidden hidden">Статус</th>
           <th class="status_hidden hidden">Телефон</th>
@@ -123,6 +132,27 @@
       const token = localStorage.getItem("session");
       let MARKERS_CACHE = null;
       let ALL_DATA = [];
+
+      const overlay = document.getElementById("overlay");
+      const loaderContainer = document.getElementById("MarkerLoader");
+
+      const MarkerLoader = lottie.loadAnimation({
+        container: loaderContainer,
+        renderer: "svg",
+        loop: true,
+        autoplay: false,
+        path: "../imgs/loader.json",
+      });
+
+      function showLoader() {
+        overlay.classList.remove("hidden");
+        MarkerLoader.play();
+      }
+
+      function hideLoader() {
+        overlay.classList.add("hidden");
+        MarkerLoader.stop();
+      }
 
       // ===== Модальное окно =====
       function showModal(message, buttons) {
@@ -254,6 +284,10 @@
           .join("");
       }
 
+      function stripAt(str) {
+        return (str || "").replace(/^@/, "");
+      }
+
       function applyCardStyle(tr, markers = []) {
         const allTds = tr.querySelectorAll("td");
         const firstTd = allTds[0];
@@ -287,6 +321,7 @@
 
         if (firstTd) firstTd.style.paddingLeft = `${totalWidth}px`;
       }
+
       function markerDropdown(id, activeMarkers = []) {
         const options = Object.entries(MARKERS_CACHE)
           .map(([key, m]) => {
@@ -302,6 +337,8 @@
       }
 
       async function toggleMarker(id, marker, isActive, cellEl) {
+        showLoader();
+
         const url = `${API}/targets/${id}/markers${isActive ? `/${marker}` : ""}`;
         const res = await fetch(url, {
           method: isActive ? "DELETE" : "POST",
@@ -312,6 +349,8 @@
           body: isActive ? undefined : JSON.stringify({ marker }),
         });
         const data = await res.json();
+
+        hideLoader();
 
         if (!data.ok) {
           showAlert(data.error || "Ошибка");
@@ -364,6 +403,12 @@
         .replace(/\B(?=(\d{3})+(?!\d))/g, "&nbsp;")}</td>
       <td class="copyable" data-label="Имя">${r.name || "-"}</td>
       <td class="copyable" data-label="Юзер">${r.username || "-"}</td>
+     <td data-label="Ссылка на ${r.username ? "ТГ" : "чат"}">
+  <a class="tg-link" href="https://t.me/${stripAt(r.username || r.chat)}" target="_blank" rel="noopener noreferrer">
+    <img class="tg-icon" src="../imgs/telegram.svg" alt="Telegram">
+    <span class="tg-text">@${stripAt(r.username || r.chat)}</span>
+  </a>
+</td>
       <td class="copyable" data-label="Чат">${r.chat || "-"}</td>
       <td class="${window.isCleared ? "hidden" : ""}" data-label="Статус">${r.status || "-"}</td>
       <td class="copyable ${window.isCleared ? "hidden" : ""}" data-label="Телефон">${r.phone ? `+${r.phone}` : "-"}</td>
@@ -413,20 +458,43 @@
           anim.destroy();
           loader.remove();
 
-          if (!currentSortMarker) {
-            renderRows(ALL_DATA);
-            return;
+          const sortOffline = document.getElementById(
+            "sort-offline-checkbox",
+          )?.checked;
+
+          let sorted = [...ALL_DATA];
+
+          if (currentSortMarker) {
+            sorted.sort((a, b) => {
+              const aHas = (a.markers || []).includes(currentSortMarker)
+                ? 1
+                : 0;
+              const bHas = (b.markers || []).includes(currentSortMarker)
+                ? 1
+                : 0;
+              return bHas - aHas;
+            });
           }
 
-          const sorted = [...ALL_DATA].sort((a, b) => {
-            const aHas = (a.markers || []).includes(currentSortMarker) ? 1 : 0;
-            const bHas = (b.markers || []).includes(currentSortMarker) ? 1 : 0;
-            return bHas - aHas;
-          });
+          if (sortOffline) {
+            const isOffline = (r) =>
+              !["RECENTLY", "ONLINE"].includes((r.status || "").toUpperCase());
+
+            const offlineExists = sorted.some(isOffline);
+
+            if (offlineExists) {
+              sorted.sort((a, b) => {
+                const aOff = isOffline(a) ? 0 : 1;
+                const bOff = isOffline(b) ? 0 : 1;
+                return aOff - bOff;
+              });
+            }
+          }
 
           renderRows(sorted);
         }, 300);
       }
+
       // ===== Загрузка списка =====
       async function load() {
         const tbody = document.querySelector("#list tbody");
@@ -444,9 +512,15 @@
         await checkAdmin();
 
         try {
-          const res = await fetch(`${API}/my-marks`, {
-            headers: { "x-session": token },
-          });
+          const sortOffline = document.getElementById("sort-offline-checkbox")
+            .checked
+            ? "1"
+            : "0";
+
+          const res = await fetch(
+            `${API}/my-marks?sort_offline=${sortOffline}`,
+            { headers: { "x-session": token } },
+          );
 
           const response = await res.json();
 
@@ -468,6 +542,7 @@
 
       function unmark(id, btn) {
         showConfirm("Вернуть этот ID в общий список?", async () => {
+          showLoader();
           btn.disabled = true;
           const res = await fetch(`${API}/unmark/${id}`, {
             method: "POST",
@@ -481,11 +556,13 @@
             showAlert(data.error || "Ошибка");
             btn.disabled = false;
           }
+          hideLoader();
         });
       }
 
       function del(id, btn) {
         showConfirm("Удалить запись окончательно?", async () => {
+          showLoader();
           btn.disabled = true;
           const res = await fetch(`${API}/delete/${id}`, {
             method: "DELETE",
@@ -499,6 +576,7 @@
             showAlert(data.error || "Ошибка");
             btn.disabled = false;
           }
+          hideLoader();
         });
       }
 
