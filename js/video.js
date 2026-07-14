@@ -29,19 +29,48 @@
     localStorage.setItem(TIME_KEY, video.currentTime);
   });
 
-  // function applyEnabledState(enabled) {
-  //   video.style.display = enabled ? 'block' : 'none';
-  //   if (enabled) {
-  //     video.play().catch(() => {});
-  //   } else {
-  //     video.pause();
-  //   }
-  // }
+  // ===== Retry при обрыве соединения =====
+  let retryCount = 0;
+  const MAX_RETRIES = 5;
+  let retryTimeout = null;
+
+  video.addEventListener("error", () => {
+    if (!video.src) return; // ошибка после намеренного removeAttribute("src") — игнорируем
+
+    console.warn("Video error, попытка восстановления...", video.error);
+
+    if (retryCount >= MAX_RETRIES) {
+      console.warn("Превышено число попыток восстановления видео");
+      return;
+    }
+
+    retryCount++;
+    const delay = Math.min(1000 * retryCount, 5000); // 1s, 2s, 3s... максимум 5s
+    const savedTime = video.currentTime || parseFloat(localStorage.getItem(TIME_KEY)) || 0;
+
+    clearTimeout(retryTimeout);
+    retryTimeout = setTimeout(() => {
+      video.load();
+      video.addEventListener(
+        "loadedmetadata",
+        () => {
+          video.currentTime = savedTime;
+          video.play().catch(() => {});
+        },
+        { once: true },
+      );
+    }, delay);
+  });
+
+  // при успешном воспроизведении сбрасываем счётчик попыток
+  video.addEventListener("playing", () => {
+    retryCount = 0;
+  });
 
   function applyEnabledState(enabled) {
     video.style.display = enabled ? "block" : "none";
 
-    const table = document.querySelector("table"); // или tbody, если он один
+    const table = document.querySelector("table");
     if (table) {
       table.classList.toggle("video-active", enabled);
     }
@@ -64,12 +93,14 @@
     if (enabled) {
       video.play().catch(() => {});
     } else {
+      // намеренное отключение — сбрасываем retry, чтобы не сработал случайный error
+      clearTimeout(retryTimeout);
+      retryCount = 0;
       video.pause();
       video.removeAttribute("src");
       video.load();
     }
   }
 
-  // делаем доступной для внешнего скрипта с тумблером
   window.bgVideoApplyState = applyEnabledState;
 })();

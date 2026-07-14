@@ -60,6 +60,11 @@
   display: block;
 }
 
+#dropdown-portal {
+  position: fixed;
+  z-index: 10000;
+}
+
 .sort-option {
   display: flex;
   align-items: center;
@@ -86,6 +91,9 @@
 
   top: 100%;
   right: -40%;
+
+  width: max-content;
+  max-width: min(280px, calc(100vw - 16px));
 
   background: rgb(57, 57, 57);
   border-radius: 6px;

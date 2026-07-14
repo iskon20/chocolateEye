@@ -67,6 +67,7 @@
   </head>
 
   <body>
+    <div id="dropdown-portal" class="marker-dropdown"></div>
     <div id="modal-overlay" class="modal-overlay hidden">
       <div class="modal-box">
         <p id="modal-message"></p>
@@ -243,18 +244,91 @@
         }
       });
 
+      const dropdownPortal = document.getElementById("dropdown-portal");
+
       document.addEventListener("click", (e) => {
-        if (!e.target.closest(".markers-cell")) {
-          document
-            .querySelectorAll(".marker-dropdown.show")
-            .forEach((d) => d.classList.remove("show"));
+        const toggleBtn = e.target.closest(".marker-toggle-btn");
+        const optionEl = e.target.closest(".marker-option");
+        const insidePortal = e.target.closest("#dropdown-portal");
+
+        if (toggleBtn) {
+          const id = Number(toggleBtn.dataset.id);
+          const alreadyOpenForThisRow =
+            dropdownPortal.classList.contains("show") &&
+            Number(dropdownPortal.dataset.rowId) === id;
+
+          closeDropdownPortal();
+
+          if (!alreadyOpenForThisRow) {
+            openDropdownPortal(toggleBtn, id);
+          }
+          return;
         }
+
+        if (optionEl) {
+          const id = Number(dropdownPortal.dataset.rowId);
+          toggleMarker(
+            id,
+            optionEl.dataset.key,
+            optionEl.dataset.active === "true",
+          );
+          closeDropdownPortal();
+          return;
+        }
+
+        if (!insidePortal) {
+          closeDropdownPortal();
+        }
+
         if (!e.target.closest(".sort-dropdown-wrapper")) {
           document
             .querySelectorAll(".sort-dropdown.show")
             .forEach((d) => d.classList.remove("show"));
         }
       });
+
+      function openDropdownPortal(btn, id) {
+        const item = ALL_DATA.find((r) => r.id === id);
+        const activeMarkers = item?.markers || [];
+
+        dropdownPortal.innerHTML = Object.entries(MARKERS_CACHE)
+          .map(([key, m]) => {
+            const active = activeMarkers.includes(key);
+            return `<div class="marker-option ${active ? "active" : ""}" data-key="${key}" data-active="${active}">
+        <span class="marker-dot" style="background:${m.color}"></span>
+        ${m.label}
+      </div>`;
+          })
+          .join("");
+
+        dropdownPortal.dataset.rowId = id;
+        dropdownPortal.classList.add("show");
+
+        requestAnimationFrame(() => positionDropdown(btn, dropdownPortal));
+      }
+
+      function closeDropdownPortal() {
+        dropdownPortal.classList.remove("show");
+        delete dropdownPortal.dataset.rowId;
+      }
+
+      function positionDropdown(btn, dropdown) {
+        const rect = btn.getBoundingClientRect();
+        const dRect = dropdown.getBoundingClientRect();
+
+        let top = rect.bottom + 4;
+        let left = rect.left;
+
+        if (left + dRect.width > window.innerWidth)
+          left = window.innerWidth - dRect.width - 8;
+        if (left < 8) left = 8;
+        if (top + dRect.height > window.innerHeight)
+          top = rect.top - dRect.height - 4;
+        if (top < 8) top = 8;
+
+        dropdown.style.top = `${top}px`;
+        dropdown.style.left = `${left}px`;
+      }
 
       const loader = document.createElement("div");
       loader.id = "loader";
@@ -361,7 +435,7 @@
         return `<div class="marker-dropdown">${options}</div>`;
       }
 
-      async function toggleMarker(id, marker, isActive, cellEl) {
+      async function toggleMarker(id, marker, isActive) {
         showLoader();
 
         const url = `${API}/targets/${id}/markers${isActive ? `/${marker}` : ""}`;
@@ -382,27 +456,20 @@
           return;
         }
 
-        const tr = cellEl.closest("tr");
-        const currentMarkers = [
-          ...cellEl.querySelectorAll(".marker-dot[data-marker]"),
-        ].map((d) => d.dataset.marker);
-
+        const item = ALL_DATA.find((r) => r.id === id);
+        const currentMarkers = item?.markers || [];
         const newMarkers = isActive
           ? currentMarkers.filter((m) => m !== marker)
           : [...currentMarkers, marker];
 
-        cellEl.innerHTML = `
-  ${markerBadges(newMarkers)}
-  <div class="marker-dropdown-anchor">
-    <button class="marker-toggle-btn" onclick="this.nextElementSibling.classList.toggle('show')">⋮</button>
-    ${markerDropdown(id, newMarkers)}
-  </div>
-`;
-
-        applyCardStyle(tr, newMarkers);
-
-        const item = ALL_DATA.find((r) => r.id === id);
         if (item) item.markers = newMarkers;
+
+        const row = document.querySelector(`tr[data-row-id="${id}"]`);
+        if (row) {
+          row.querySelector(".markers-badges").innerHTML =
+            markerBadges(newMarkers);
+          applyCardStyle(row, newMarkers);
+        }
       }
 
       function renderRows(data) {
@@ -422,6 +489,7 @@
 
         data.forEach((r) => {
           const tr = document.createElement("tr");
+          tr.dataset.rowId = r.id;
           tr.innerHTML = `
       <td class="copyable" style="white-space: nowrap;" data-label="ID">${r.id
         .toString()
@@ -429,7 +497,7 @@
       <td class="copyable" data-label="Имя">${r.name || "-"}</td>
       <td class="copyable" data-label="Юзер">${r.username || "-"}</td>
      <td data-label="Ссылка на ${r.username ? "ТГ" : "чат"}">
-  <a class="tg-link" href="https://t.me/${stripAt(r.username || r.chat)}" target="_blank" rel="noopener noreferrer">
+  <a class="tg-link" href="https://telegram.me/${stripAt(r.username || r.chat)}" target="_blank" rel="noopener noreferrer">
     <img class="tg-icon" src="../imgs/telegram.svg" alt="Telegram">
     <span class="tg-text">@${stripAt(r.username || r.chat)}</span>
   </a>
@@ -447,19 +515,13 @@
         </div>
         </td>
         <td data-label="Маркеры">
-          <div class="markers-cell">
-            ${markerBadges(r.markers)}
-            <div class="marker-dropdown-anchor">
-              <button
-                class="marker-toggle-btn"
-                onclick="this.nextElementSibling.classList.toggle('show')"
-              >
-                ⋮
-              </button>
-              ${markerDropdown(r.id, r.markers)}
-            </div>
-          </div>
-        </td>`;
+  <div class="markers-cell">
+    <span class="markers-badges">${markerBadges(r.markers)}</span>
+    <div class="marker-dropdown-anchor">
+      <button class="marker-toggle-btn" data-id="${r.id}">⋮</button>
+    </div>
+  </div>
+</td>`;
           applyCardStyle(tr, r.markers);
 
           tbody.appendChild(tr);
