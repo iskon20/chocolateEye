@@ -74,6 +74,13 @@
       </div>
     </div>
 
+    <video class="bg-video" muted loop playsinline id="bgVideo">
+      <source
+        src="https://cdn.iskonentertainment.it.com/sdvg.mp4"
+        type="video/mp4"
+      />
+    </video>
+
     <div id="overlay" class="hidden block">
       <div id="MarkerLoader"></div>
     </div>
@@ -100,6 +107,10 @@
         <input type="checkbox" id="sort-offline-checkbox" onchange="load()" />
         Сначала не в сети
       </label>
+      <label class="bg-video-toggle">
+        <input type="checkbox" id="bgVideoToggle" />
+        СДВГ-режим
+      </label>
     </div>
 
     <table id="list" class="responsive-table">
@@ -123,7 +134,21 @@
     </table>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script>
+      (function () {
+        const toggle = document.getElementById("bgVideoToggle");
+        const ENABLED_KEY = "bgVideoEnabled";
 
+        toggle.checked = localStorage.getItem(ENABLED_KEY) !== "false";
+
+        toggle.addEventListener("change", () => {
+          const enabled = toggle.checked;
+          localStorage.setItem(ENABLED_KEY, enabled);
+          window.bgVideoApplyState(enabled);
+        });
+      })();
+    </script>
+    <script src="../js/video.js"></script>
     <script src="../config.js"></script>
     <script>
       // const API = "https://api.iskonentertainment.it.com/api";

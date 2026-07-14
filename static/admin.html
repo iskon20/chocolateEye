@@ -57,7 +57,8 @@
         font-size: 13px;
         color: #aaa;
       }
-      .modal input[type="text"] {
+      .modal input[type="text"],
+      .modal input[type="number"] {
         width: 100%;
         box-sizing: border-box;
         margin-bottom: 14px;
@@ -99,6 +100,36 @@
         gap: 8px;
         margin-top: 16px;
         justify-content: flex-end;
+      }
+
+      /* Модалка подтверждения */
+      .confirm-modal {
+        max-width: 380px;
+        text-align: center;
+      }
+      .confirm-modal p {
+        margin: 0 0 20px;
+        color: #ddd;
+        font-size: 15px;
+      }
+      .confirm-modal .modal-actions {
+        justify-content: center;
+      }
+      .btn-danger {
+        background: #7a1414;
+        border: none;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        padding: 8px 16px;
+      }
+      .btn-secondary {
+        background: #333;
+        border: 1px solid #555;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        padding: 8px 16px;
       }
 
       @media screen and (max-width: 1024px) {
@@ -161,6 +192,7 @@
             <th>Email</th>
             <th>Имя</th>
             <th>Session IDs</th>
+            <th>Приоритет</th>
             <th>Чужие</th>
             <th>Создан</th>
             <th></th>
@@ -195,6 +227,9 @@
         <label>Имя (user_name)</label>
         <input type="text" id="editUserName" placeholder="Введите имя" />
 
+        <label>Приоритет</label>
+        <input type="number" id="editPriority" placeholder="0" step="1" />
+
         <label>Session IDs</label>
         <div class="session-list" id="sessionList"></div>
         <button onclick="addSessionField()">+ Добавить session_id</button>
@@ -206,11 +241,24 @@
       </div>
     </div>
 
+    <!-- Модалка подтверждения удаления -->
+    <div class="modal-overlay" id="confirmModal">
+      <div class="modal confirm-modal">
+        <h3>🗑 Удалить пользователя?</h3>
+        <p id="confirmText">Это действие нельзя отменить.</p>
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="closeConfirm()">Отмена</button>
+          <button class="btn-danger" onclick="confirmDelete()">Удалить</button>
+        </div>
+      </div>
+    </div>
+
     <script src="../config.js"></script>
     <script>
       const API = window.API_URL;
       const token = localStorage.getItem("session");
       let editingUserId = null;
+      let pendingDeleteId = null;
 
       async function loadUsers() {
         const res = await fetch(`${API}/admin/users`, {
@@ -229,11 +277,13 @@
           editBtn.textContent = "✏️";
           editBtn.dataset.userId = u.id;
           editBtn.dataset.userName = u.user_name || "";
+          editBtn.dataset.priority = u.priority ?? 0;
           editBtn.dataset.sessionIds = JSON.stringify(u.session_ids || []);
           editBtn.addEventListener("click", () => {
             openModal(
               parseInt(editBtn.dataset.userId),
               editBtn.dataset.userName,
+              parseInt(editBtn.dataset.priority) || 0,
               JSON.parse(editBtn.dataset.sessionIds),
             );
           });
@@ -243,6 +293,7 @@
             <td class="copyable" data-label="Email">${u.email}</td>
             <td data-label="Имя">${u.user_name || "—"}</td>
             <td data-label="Session IDs" style="font-size:12px;word-break:break-all">${sessions}</td>
+            <td data-label="Приоритет">${u.priority ?? 0}</td>
             <td data-label="Чужие">
               <input type="checkbox" ${u.can_mark_others ? "checked" : ""}
                 onchange="toggleCanMark(${u.id}, this.checked)">
@@ -250,7 +301,7 @@
             <td data-label="Создан">${u.created_at}</td>
             <td data-label="Действие">
               <div id="actions-${u.id}">
-                <button onclick="delUser(${u.id})">🗑</button>
+                <button onclick="askDelUser(${u.id}, '${(u.email || "").replace(/'/g, "\\'")}')">🗑</button>
                 <button onclick="location.href='marks.html?user=${u.id}'">📝 Отмеченные</button>
               </div>
             </td>
@@ -269,9 +320,10 @@
         });
       }
 
-      function openModal(userId, userName, sessionIds) {
+      function openModal(userId, userName, priority, sessionIds) {
         editingUserId = userId;
         document.getElementById("editUserName").value = userName;
+        document.getElementById("editPriority").value = priority;
 
         const list = document.getElementById("sessionList");
         list.innerHTML = "";
@@ -300,6 +352,8 @@
 
       async function saveUser() {
         const user_name = document.getElementById("editUserName").value.trim();
+        const priorityRaw = document.getElementById("editPriority").value.trim();
+        const priority = priorityRaw === "" ? 0 : parseInt(priorityRaw, 10) || 0;
         const inputs = document.querySelectorAll(
           "#sessionList .session-item input",
         );
@@ -313,15 +367,31 @@
             "Content-Type": "application/json",
             "x-session": token,
           },
-          body: JSON.stringify({ user_name, session_ids }),
+          body: JSON.stringify({ user_name, priority, session_ids }),
         });
 
         closeModal();
         loadUsers();
       }
 
-      async function delUser(id) {
-        if (!confirm("Удалить пользователя?")) return;
+      // ── Удаление с локальным подтверждением ──
+      function askDelUser(id, email) {
+        pendingDeleteId = id;
+        document.getElementById("confirmText").textContent = email
+          ? `Пользователь «${email}» будет удалён без возможности восстановления.`
+          : "Это действие нельзя отменить.";
+        document.getElementById("confirmModal").classList.add("open");
+      }
+
+      function closeConfirm() {
+        document.getElementById("confirmModal").classList.remove("open");
+        pendingDeleteId = null;
+      }
+
+      async function confirmDelete() {
+        if (pendingDeleteId == null) return;
+        const id = pendingDeleteId;
+        closeConfirm();
         await fetch(`${API}/admin/users/${id}`, {
           method: "DELETE",
           headers: { "x-session": token },
@@ -379,9 +449,12 @@
         loadWhitelist();
       }
 
-      // Закрытие модалки по клику на фон
+      // Закрытие модалок по клику на фон
       document.getElementById("editModal").addEventListener("click", (e) => {
         if (e.target === e.currentTarget) closeModal();
+      });
+      document.getElementById("confirmModal").addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) closeConfirm();
       });
 
       loadUsers();
