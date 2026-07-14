@@ -267,6 +267,17 @@ body {
   color: red;
 }
 
+table.video-active tr {
+  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.sort-bar.video-active p,
+.video-active.count-display,
+.header h2.video-active {
+  text-shadow: 1px 3px 5px #000000;
+}
+
 .responsive-table {
   font-size: 1.3em;
   width: 100%;
@@ -384,7 +395,6 @@ body {
   align-items: center;
   justify-content: center;
 }
-
 
 .bg-video {
   position: fixed;
