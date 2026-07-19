@@ -17,8 +17,9 @@
   }
 
   function toggleClass(selector, enabled) {
-    const el = document.querySelector(selector);
-    if (el) el.classList.toggle("video-active", enabled);
+    document.querySelectorAll(selector).forEach((el) => {
+      el.classList.toggle("video-active", enabled);
+    });
   }
 
   function stopRetries() {
@@ -46,7 +47,7 @@
           video.currentTime = savedTime;
           video.play().catch(() => {});
         },
-        { once: true }
+        { once: true },
       );
     }, delay);
   }
@@ -58,10 +59,14 @@
     toggleClass(".sort-bar", enabled);
     toggleClass(".count-display", enabled);
     toggleClass(".header h2", enabled);
+    toggleClass(".stats-bar span", enabled);
 
     if (enabled) {
       // если src был снят ранее (video.removeAttribute("src")) — восстанавливаем
-      if (!video.getAttribute("src") && !video.querySelector("source")?.getAttribute("src")) {
+      if (
+        !video.getAttribute("src") &&
+        !video.querySelector("source")?.getAttribute("src")
+      ) {
         return; // источник отсутствует, восстанавливать нечего (на случай кастомных сценариев)
       }
       video.play().catch(() => {});

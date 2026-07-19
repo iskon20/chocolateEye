@@ -244,6 +244,13 @@ body {
   right: 2%;
 }
 
+.parsers {
+  position: absolute;
+
+  top: 9%;
+  right: 2%;
+}
+
 .hidden {
   display: none !important;
 }
@@ -283,6 +290,11 @@ table.video-active {
 .sort-bar.video-active p,
 .video-active.count-display,
 .header h2.video-active {
+  text-shadow: 1px 3px 5px #000000;
+}
+
+.stats-bar .stat-item.video-active{
+  
   text-shadow: 1px 3px 5px #000000;
 }
 
