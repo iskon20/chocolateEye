@@ -80,7 +80,7 @@
 
       /* Запасной адаптив на случай, если .responsive-table в style.css
          не покрывает подписи для новых колонок этой страницы */
-      @media (max-width: 640px) {
+      @media (max-width: 1024px) {
         #list.responsive-table thead {
           display: none;
         }
@@ -159,7 +159,11 @@
       </span>
     </div>
     <label style="margin-left: 10px">
-      <input type="checkbox" id="sort-flood-checkbox" onchange="renderTable()" />
+      <input
+        type="checkbox"
+        id="sort-flood-checkbox"
+        onchange="renderTable()"
+      />
       Сначала короткий флудвейт
     </label>
     <button class="refresh-btn" onclick="load()">Обновить</button>
@@ -168,11 +172,11 @@
       <thead>
         <tr>
           <th>Имя</th>
-          <th>Юзер</th>
+          <th>Ссылка на ТГ</th>
           <th>Телефон</th>
           <th>Статус</th>
           <th>Освободится через</th>
-          <th>Использован последний раз</th>
+          <th>Использован</th>
         </tr>
       </thead>
       <tbody id="accounts-tbody"></tbody>
@@ -232,6 +236,10 @@
 
       function showAlert(message) {
         showModal(message, [{ label: "Ок", className: "modal-btn-ok" }]);
+      }
+
+      function stripAt(str) {
+        return (str || "").replace(/^@/, "");
       }
 
       async function fetchAccountStats() {
@@ -307,12 +315,17 @@
           if (acc.is_banned) tr.classList.add("row-banned");
 
           tr.innerHTML = `
-            <td data-label="Имя">${acc.full_name ?? ""}</td>
-            <td data-label="Юзер">${acc.username ?? ""}</td>
+            <td data-label="Имя">${(acc.full_name ?? "").slice(0, 25)}</td>
+            <td data-label="Ссылка на ТГ">
+  <a class="tg-link" href="https://telegram.me/${stripAt(acc.username || "-")}" target="_blank" rel="noopener noreferrer">
+    <img class="tg-icon" src="../imgs/telegram.svg" alt="Telegram">
+    <span class="tg-text">@${stripAt(acc.username || "-")}</span>
+  </a>
+</td>
             <td data-label="Телефон">${acc.phone}</td>
             <td class="status-cell" data-label="Статус">${renderStatus(acc)}</td>
             <td data-label="Освободится через">${acc.flood_seconds_left ? formatFlood(acc.flood_seconds_left) : "—"}</td>
-            <td data-label="Использован последний раз">${formatDate(acc.last_taken_at)}</td>
+            <td data-label="Использован">${formatDate(acc.last_taken_at)}</td>
           `;
 
           tbody.appendChild(tr);
@@ -333,7 +346,8 @@
           document.getElementById("stat-banned").textContent = stats.banned;
           document.getElementById("stat-total").textContent = stats.total;
 
-          if (listResp.data.redirect) window.location.href = listResp.data.redirect;
+          if (listResp.data.redirect)
+            window.location.href = listResp.data.redirect;
 
           CURRENT_ACCOUNTS = listResp.data;
           renderTable();
