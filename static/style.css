@@ -276,8 +276,8 @@ body {
 }
 
 table.video-active {
-  backdrop-filter: blur(3px);
-  background: rgba(0, 0, 0, 0.2);
+  /* backdrop-filter: blur(3px);
+  background: rgba(0, 0, 0, 0.2); */
 }
 
 .sort-bar.video-active p,
@@ -488,8 +488,8 @@ td {
   }
 
   .responsive-table.video-active tr {
-    backdrop-filter: blur(3px);
-    background: rgba(0, 0, 0, 0.2);
+    /* backdrop-filter: blur(3px);
+    background: rgba(0, 0, 0, 0.2); */
   }
 
   .responsive-table tr.has-markers td {
