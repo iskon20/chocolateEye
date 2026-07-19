@@ -275,8 +275,8 @@ body {
   color: red;
 }
 
-table.video-active tr {
-  backdrop-filter: blur(5px);
+table.video-active {
+  backdrop-filter: blur(3px);
   background: rgba(0, 0, 0, 0.2);
 }
 
@@ -482,6 +482,16 @@ td {
 }
 
 @media screen and (max-width: 1024px) {
+  table.video-active {
+    backdrop-filter: none;
+    background: none;
+  }
+
+  .responsive-table.video-active tr {
+    backdrop-filter: blur(3px);
+    background: rgba(0, 0, 0, 0.2);
+  }
+
   .responsive-table tr.has-markers td {
     padding-left: var(--marker-total-width);
   }
