@@ -225,6 +225,11 @@ body {
   transform: scale(0.98);
 }
 
+.blacklist-btn.is-blocked {
+  background: #a33; /* или любой другой "активный/опасный" цвет */
+  color: #fff;
+}
+
 .tg-icon {
   width: 20px;
   height: 20px;

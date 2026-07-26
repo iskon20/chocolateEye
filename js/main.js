@@ -113,7 +113,6 @@ async function loadTargets(cleared) {
   const token = localStorage.getItem("session");
 
   const tbody = document.querySelector("#list tbody");
-  tbody.innerHTML = "";
 
   tbody.parentElement.after(loader);
 
@@ -147,6 +146,7 @@ async function loadTargets(cleared) {
 
     anim.destroy();
     loader.remove();
+    tbody.innerHTML = "";
 
     if (data.redirect) window.location.href = data.redirect;
 
@@ -183,6 +183,10 @@ async function loadTargets(cleared) {
         t.added_minutes_ago < 5
           ? 5 - t.added_minutes_ago
           : null;
+
+      const foundFrom = t.chat || "";
+      const isBlocked = !!t.is_blocked;
+
       tr.innerHTML = `
     <td class="copyable" style="white-space: nowrap;" data-label="ID">${t.id
       .toString()
@@ -204,6 +208,10 @@ async function loadTargets(cleared) {
     <div class="card-btn-container-main">
     <button class="mark-btn" onclick="mark(${t.id}, this)" ${canMark ? "" : "disabled"}>${minsLeft !== null ? `${minsLeft} мин.` : canMark ? "Забрать" : "✕"}</button>
     <button class="delete-btn" onclick="deleteTarget(${t.id}, this)" ${canMark ? "" : "disabled"}>${minsLeft !== null ? `${minsLeft} мин.` : canMark ? "Удалить" : "✕"}</button>
+    <button class="blacklist-btn ${isBlocked ? "is-blocked" : ""}"
+      onclick="toggleBlacklist('${foundFrom.replace(/'/g, "\\'")}', this)"
+      ${foundFrom ? "" : "disabled"}
+      data-blocked="${isBlocked}">${isBlocked ? "Разблокировать" : "В ЧС"}</button>
     </div>
   </td>
   
@@ -245,6 +253,46 @@ async function checkAdmin() {
   } catch (e) {
     console.error("Ошибка проверки админа:", e);
   }
+}
+
+async function toggleBlacklist(username, btn) {
+  if (!username) return;
+  const token = localStorage.getItem("session");
+  const isBlocked = btn.dataset.blocked === "true";
+
+  showConfirm(
+    isBlocked ? `Убрать "${username}" из ЧС?` : `Добавить "${username}" в ЧС?`,
+    async () => {
+      btn.disabled = true;
+      try {
+        const res = await fetch(
+          `${API}/channels-blacklist${isBlocked ? `/${encodeURIComponent(username)}` : ""}`,
+          {
+            method: isBlocked ? "DELETE" : "POST",
+            headers: {
+              "x-session": token,
+              ...(isBlocked ? {} : { "Content-Type": "application/json" }),
+            },
+            ...(isBlocked ? {} : { body: JSON.stringify({ username }) }),
+          },
+        );
+        const data = await res.json();
+        if (data.ok) {
+          const nowBlocked = !isBlocked;
+          btn.dataset.blocked = nowBlocked;
+          btn.classList.toggle("is-blocked", nowBlocked);
+          btn.textContent = nowBlocked ? "Разблокировать" : "В ЧС";
+          loadTargets()
+        } else {
+          showAlert(data.error || "Ошибка");
+        }
+      } catch (e) {
+        showAlert("Ошибка сети");
+      } finally {
+        btn.disabled = false;
+      }
+    },
+  );
 }
 
 async function mark(id, btn) {

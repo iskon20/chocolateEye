@@ -490,6 +490,10 @@
         data.forEach((r) => {
           const tr = document.createElement("tr");
           tr.dataset.rowId = r.id;
+
+          const foundFrom = r.chat || "";
+          const isBlocked = !!r.is_blocked;
+
           tr.innerHTML = `
       <td class="copyable" style="white-space: nowrap;" data-label="ID">${r.id
         .toString()
@@ -512,6 +516,10 @@
         <div class="card-btn-container">
           <button class="action return" onclick="unmark(${r.id}, this)">Вернуть</button>
           <button class="action delete" onclick="del(${r.id}, this)">Удалить</button>
+          <button class="action blacklist-btn ${isBlocked ? "is-blocked" : ""}"
+            onclick="toggleBlacklist('${foundFrom.replace(/'/g, "\\'")}', this)"
+            ${foundFrom ? "" : "disabled"}
+            data-blocked="${isBlocked}">${isBlocked ? "Разблокировать" : "В ЧС"}</button>
         </div>
         </td>
         <td data-label="Маркеры">
@@ -585,7 +593,6 @@
       // ===== Загрузка списка =====
       async function load() {
         const tbody = document.querySelector("#list tbody");
-        tbody.innerHTML = "";
         tbody.parentElement.after(loader);
 
         const anim = lottie.loadAnimation({
@@ -614,6 +621,8 @@
           anim.destroy();
           loader.remove();
 
+          tbody.innerHTML = "";
+
           if (response.redirect) window.location.href = response.redirect;
 
           MARKERS_CACHE = response.markers;
@@ -625,6 +634,50 @@
           console.log(e);
           loader.textContent = "Ошибка загрузки";
         }
+      }
+
+      async function toggleBlacklist(username, btn) {
+        if (!username) return;
+        const token = localStorage.getItem("session");
+        const isBlocked = btn.dataset.blocked === "true";
+
+        showConfirm(
+          isBlocked
+            ? `Убрать "${username}" из ЧС?`
+            : `Добавить "${username}" в ЧС?`,
+          async () => {
+            btn.disabled = true;
+            try {
+              const res = await fetch(
+                `${API}/channels-blacklist${isBlocked ? `/${encodeURIComponent(username)}` : ""}`,
+                {
+                  method: isBlocked ? "DELETE" : "POST",
+                  headers: {
+                    "x-session": token,
+                    ...(isBlocked
+                      ? {}
+                      : { "Content-Type": "application/json" }),
+                  },
+                  ...(isBlocked ? {} : { body: JSON.stringify({ username }) }),
+                },
+              );
+              const data = await res.json();
+              if (data.ok) {
+                const nowBlocked = !isBlocked;
+                btn.dataset.blocked = nowBlocked;
+                btn.classList.toggle("is-blocked", nowBlocked);
+                btn.textContent = nowBlocked ? "Разблокировать" : "В ЧС";
+              } else {
+                showAlert(data.error || "Ошибка");
+              }
+            } catch (e) {
+              showAlert("Ошибка сети");
+            } finally {
+              load();
+              btn.disabled = false;
+            }
+          },
+        );
       }
 
       function unmark(id, btn) {

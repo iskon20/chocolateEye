@@ -249,6 +249,7 @@
             "Content-Type": "application/json",
           },
         });
+
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       }
@@ -263,7 +264,7 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       }
-
+      
       function formatDate(str) {
         if (!str) return "никогда";
         return str.slice(0, 19).replace("T", " ");
@@ -345,9 +346,6 @@
           document.getElementById("stat-flood").textContent = stats.flood;
           document.getElementById("stat-banned").textContent = stats.banned;
           document.getElementById("stat-total").textContent = stats.total;
-
-          if (listResp.data.redirect)
-            window.location.href = listResp.data.redirect;
 
           CURRENT_ACCOUNTS = listResp.data;
           renderTable();
