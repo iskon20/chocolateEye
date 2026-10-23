@@ -1,1 +1,1 @@
-window.API_URL = "https://api.iskonentertainment.it.com/api";
+window.API_URL = "http://46.224.176.241/api";
